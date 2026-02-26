@@ -4,8 +4,8 @@ services:
     container_name: reaction
     restart: unless-stopped
     volumes:
-      - ./data:/app/data
-      - ./public:/app/public
+      # 仅持久化数据库文件；前端静态资源使用镜像内置文件
+      - ./data/data.db:/app/data/data.db
     networks:
       webnet:
         aliases:
