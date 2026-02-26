@@ -252,19 +252,6 @@ async function loadStats(){
   }
 }
 
-async function recordFalseStart(){
-  const r = await fetch("/api/simple/false-start",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ bid, name: myName })
-  });
-  const j = await r.json();
-  if (j.ok) {
-    pendingFalseStarts = j.pending_false_starts || pendingFalseStarts;
-    renderWelcome();
-  }
-}
-
 // ==========================
 // Simple Logic
 // ==========================
@@ -272,8 +259,6 @@ let state="booting";
 let startTime=null;
 let readyTimeout=null;
 let falseStarts=0;
-let activeChallengeToken="";
-let readyAtServer=0;
 
 const screen=document.getElementById("screen");
 const message=document.getElementById("message");
@@ -294,20 +279,7 @@ function reset(){
 }
 
 const isCoarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-async function requestChallenge(){
-  const r = await fetch("/api/simple/challenge", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ bid, name: myName })
-  });
-  const j = await r.json();
-  if (!j.ok || !j.token || !j.ready_at) {
-    throw new Error("challenge failed");
-  }
-  activeChallengeToken = j.token;
-  readyAtServer = Number(j.ready_at);
-  return j;
-}
+
 
 function enterReadyState(){
   state="ready";
@@ -330,33 +302,24 @@ async function handleAction(evt){
   if(state==="idle"){
     state="waiting";
     setScreen("#dc2626", T[lang].waitGreen);
-    try {
-      const challenge = await requestChallenge();
-      const delay = Math.max(0, Number(challenge.ready_at) - Date.now());
-      if (readyTimeout) clearTimeout(readyTimeout);
-      readyTimeout = setTimeout(() => {
-        if (state !== "waiting") return;
-        if (!isCoarse && "requestAnimationFrame" in window) {
-          requestAnimationFrame(enterReadyState);
-        } else {
-          enterReadyState();
-        }
-      }, delay);
-    } catch (_err) {
-      state="idle";
-      activeChallengeToken = "";
-      setScreen("#3b82f6", T[lang].challengeError);
-    }
+    const delay = 1000 + Math.floor(Math.random() * 3000);
+    if (readyTimeout) clearTimeout(readyTimeout);
+    readyTimeout = setTimeout(() => {
+      if (state !== "waiting") return;
+      if (!isCoarse && "requestAnimationFrame" in window) {
+        requestAnimationFrame(enterReadyState);
+      } else {
+        enterReadyState();
+      }
+    }, delay);
     return;
   }
 
   if(state==="waiting"){
     falseStarts++;
     if (readyTimeout) clearTimeout(readyTimeout);
-    await recordFalseStart();
     setScreen("#3b82f6", T[lang].tooEarly);
     state="idle";
-    activeChallengeToken = "";
     return;
   }
 
@@ -373,19 +336,15 @@ async function handleAction(evt){
         name: myName,
         bid: bid,
         ms: ms,
-        falseStarts: falseStarts,
-        challengeToken: activeChallengeToken,
-        rtObservedAt: readyAtServer
+        falseStarts: falseStarts
       })
     });
     const j=await r.json();
     if (!j.ok) {
       result.textContent = `${T[lang].challengeError}
 ${j.error || "submit failed"}`;
-      activeChallengeToken = "";
       return;
     }
-    activeChallengeToken = "";
     if (typeof j.pending_false_starts === "number") {
       pendingFalseStarts = j.pending_false_starts;
       renderWelcome();

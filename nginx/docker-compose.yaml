@@ -1,6 +1,7 @@
 services:
   nginx:
     image: nginx:alpine
+    pull_policy: always
     container_name: nginx
     restart: unless-stopped
     volumes:
@@ -8,7 +9,9 @@ services:
     expose:
       - "80"
     networks:
-      - webnet
+      webnet:
+        aliases:
+          - nginx
 
 networks:
   webnet:
