@@ -164,7 +164,7 @@
 Added `deploy/docker-compose.ghcr.yaml` so a NAS GUI can import **one compose source** and pull all three service images (`games`, `reaction`, `main-site`) from GHCR in one shot.
 
 Usage:
-- Copy `deploy/.env.example` to `deploy/.env` and fill `GHCR_OWNER`.
+- Copy `deploy/.env.example` to `deploy/.env` and adjust optional variables if needed.
 - Create database files referenced by `GAMES_DB_PATH` and `REACTION_DB_PATH` before first run.
 - Import `deploy/docker-compose.ghcr.yaml` in your Docker GUI (or run with `docker compose --env-file deploy/.env -f deploy/docker-compose.ghcr.yaml up -d`).
 
@@ -185,3 +185,12 @@ The update script will:
 - Recreate containers with current tags
 - Prune old/dangling images to reclaim space
 - Ensure SQLite DB files exist at mapped host paths
+
+## Docker deployment standard document
+
+See `docs/DOCKER_DEPLOY_STANDARD.md` for unified rules on:
+- deploy folder purpose,
+- service directory/layout conventions,
+- `webnet` network policy,
+- DB file mapping convention (`<service>/data/data.db`),
+- and how new services (e.g. `abc`) are auto-built by GitHub Actions.

@@ -2,7 +2,7 @@ name: xpsxp-stack
 
 services:
   games:
-    image: ghcr.io/${GHCR_OWNER}/games:${IMAGE_TAG:-latest}
+    image: ghcr.io/uilpx/games:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: games
     restart: unless-stopped
@@ -21,7 +21,7 @@ services:
           - games
 
   reaction:
-    image: ghcr.io/${GHCR_OWNER}/reaction:${IMAGE_TAG:-latest}
+    image: ghcr.io/uilpx/reaction:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: reaction
     restart: unless-stopped
@@ -33,7 +33,7 @@ services:
           - reaction
 
   main-site:
-    image: ghcr.io/${GHCR_OWNER}/main-site:${IMAGE_TAG:-latest}
+    image: ghcr.io/uilpx/main-site:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: main-site
     restart: unless-stopped

@@ -1,6 +1,6 @@
 services:
   games:
-    image: ghcr.io/${GHCR_OWNER}/games:${IMAGE_TAG:-latest}
+    image: ghcr.io/uilpx/games:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: games
     restart: unless-stopped
