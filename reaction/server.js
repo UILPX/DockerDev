@@ -7,6 +7,30 @@ const app = express();
 app.use(express.json({ limit: "16kb" }));
 
 const db = new Database("/app/data/data.db");
+
+function createRateLimiter({ windowMs, maxRequests }) {
+  const buckets = new Map();
+  return (req, res, next) => {
+    const now = Date.now();
+    const ip = (req.ip || req.headers["x-forwarded-for"] || "unknown").toString();
+    const item = buckets.get(ip);
+
+    if (!item || item.resetAt <= now) {
+      buckets.set(ip, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+
+    if (item.count >= maxRequests) {
+      return res.status(429).json({ ok: false, msg: "Too many requests, please retry later." });
+    }
+
+    item.count += 1;
+    return next();
+  };
+}
+
+const apiRateLimit = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 180 });
+app.use("/api/", apiRateLimit);
 db.pragma("journal_mode = WAL");
 db.pragma("synchronous = NORMAL");
 db.pragma("temp_store = MEMORY");
@@ -246,11 +270,12 @@ app.post("/api/simple/challenge", (req, res) => {
   }
 
   const nowTs = Date.now();
-  const readyAt = nowTs + 1000 + Math.floor(Math.random() * 3000);
+  const waitMs = 1000 + Math.floor(Math.random() * 3000);
+  const readyAt = nowTs + waitMs;
   const expiresAt = readyAt + SIMPLE_CHALLENGE_TTL_MS;
   const nonce = crypto.randomBytes(16).toString("hex");
   const token = encodeSimpleChallenge({ bid, name, readyAt, expiresAt, nonce, v: 1 });
-  return res.json({ ok: true, token, ready_at: readyAt });
+  return res.json({ ok: true, token, ready_at: readyAt, wait_ms: waitMs });
 });
 
 app.post("/api/simple/submit", (req, res) => {
@@ -268,13 +293,15 @@ app.post("/api/simple/submit", (req, res) => {
   const nowTs = Date.now();
   maybeCleanupUsedChallenges(nowTs);
 
-  const challenge = decodeSimpleChallenge(challengeToken);
-  if (!challenge || challenge.v !== 1) return res.status(400).json({ ok: false, error: "invalid challenge" });
-  if (challenge.bid !== bid || challenge.name !== name) return res.status(400).json({ ok: false, error: "challenge mismatch" });
-  if (nowTs < challenge.readyAt) return res.status(400).json({ ok: false, error: "too early" });
-  if (nowTs > challenge.expiresAt) return res.status(400).json({ ok: false, error: "challenge expired" });
-  if (!consumeSimpleChallenge(challengeToken, nowTs)) {
-    return res.status(400).json({ ok: false, error: "challenge already used" });
+  if (challengeToken) {
+    const challenge = decodeSimpleChallenge(challengeToken);
+    if (!challenge || challenge.v !== 1) return res.status(400).json({ ok: false, error: "invalid challenge" });
+    if (challenge.bid !== bid || challenge.name !== name) return res.status(400).json({ ok: false, error: "challenge mismatch" });
+    if (nowTs < challenge.readyAt) return res.status(400).json({ ok: false, error: "too early" });
+    if (nowTs > challenge.expiresAt) return res.status(400).json({ ok: false, error: "challenge expired" });
+    if (!consumeSimpleChallenge(challengeToken, nowTs)) {
+      return res.status(400).json({ ok: false, error: "challenge already used" });
+    }
   }
 
   const pendingFalseStarts = bid ? (stmtGetPendingFalseStarts.get(bid)?.pending_count || 0) : (falseStarts || 0);

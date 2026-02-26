@@ -1,6 +1,7 @@
 services:
   games:
-    build: .
+    image: ghcr.io/uilpx/games:latest
+    pull_policy: always
     container_name: games
     restart: unless-stopped
     environment:
@@ -11,8 +12,7 @@ services:
       - SMTP_PASS=
       - SMTP_FROM=
     volumes:
-      - ./data:/app/data
-      - ./public:/app/public
+      - ./data/data.db:/app/data/data.db
     networks:
       webnet:
         aliases:

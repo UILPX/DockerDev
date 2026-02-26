@@ -5,9 +5,33 @@ const Database = require("better-sqlite3");
 const nodemailer = require("nodemailer");
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 
 const db = new Database("/app/data/data.db");
+
+function createRateLimiter({ windowMs, maxRequests }) {
+  const buckets = new Map();
+  return (req, res, next) => {
+    const now = Date.now();
+    const ip = (req.ip || req.headers["x-forwarded-for"] || "unknown").toString();
+    const item = buckets.get(ip);
+
+    if (!item || item.resetAt <= now) {
+      buckets.set(ip, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+
+    if (item.count >= maxRequests) {
+      return res.status(429).json({ ok: false, msg: "Too many requests, please retry later." });
+    }
+
+    item.count += 1;
+    return next();
+  };
+}
+
+const apiRateLimit = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 120 });
+app.use("/api/", apiRateLimit);
 
 const SESSION_TTL_SHORT_MS = 24 * 60 * 60 * 1000;
 const SESSION_TTL_LONG_MS = 30 * 24 * 60 * 60 * 1000;
