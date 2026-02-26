@@ -1,0 +1,15 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d:ro
+    expose:
+      - "80"
+    networks:
+      - webnet
+
+networks:
+  webnet:
+    external: true

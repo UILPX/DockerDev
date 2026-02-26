@@ -1,0 +1,10 @@
+{
+  "name": "reaction",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.js",
+  "dependencies": {
+    "better-sqlite3": "^9.4.0",
+    "express": "^4.18.3"
+  }
+}

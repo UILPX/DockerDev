@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>排行榜</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="wrap">
+    <h1>排行榜</h1>
+    <div class="nav">
+      <a class="btn" href="/">首页</a>
+      <a class="btn" href="/auth.html">登录/注册</a>
+    </div>
+    <div class="card">
+      <select id="game">
+        <option value="2048">2048</option>
+        <option value="tetris">俄罗斯方块</option>
+        <option value="reaction">Reaction(越小越好)</option>
+      </select>
+      <button id="refreshBtn" class="primary">刷新</button>
+      <div id="status" class="status"></div>
+      <table>
+        <thead><tr><th>#</th><th>玩家</th><th>成绩</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    const rowsEl = document.getElementById("rows");
+    const statusEl = document.getElementById("status");
+    const gameEl = document.getElementById("game");
+
+    function fmt(game, value) {
+      return game === "reaction" ? `${value} ms` : `${value}`;
+    }
+
+    async function load() {
+      const game = gameEl.value;
+      rowsEl.innerHTML = "";
+      try {
+        const r = await GAMES.api(`/api/scores/leaderboard?game=${encodeURIComponent(game)}&limit=50`, {}, true);
+        r.rows.forEach((row, i) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${i + 1}</td><td>${row.display_name}</td><td>${fmt(game, row.value)}</td>`;
+          rowsEl.appendChild(tr);
+        });
+        if (r.me) {
+          GAMES.setStatus(statusEl, `你的排名: ${r.me.rank}，成绩: ${fmt(game, r.me.value)}`, true);
+        } else {
+          GAMES.setStatus(statusEl, "未登录或该游戏无个人成绩");
+        }
+      } catch (e) {
+        GAMES.setStatus(statusEl, e.message);
+      }
+    }
+
+    document.getElementById("refreshBtn").addEventListener("click", load);
+    gameEl.addEventListener("change", load);
+    load();
+  </script>
+</body>
+</html>

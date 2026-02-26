@@ -1,0 +1,16 @@
+services:
+  reaction:
+    build: .
+    container_name: reaction
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./public:/app/public
+    networks:
+      webnet:
+        aliases:
+          - reaction
+
+networks:
+  webnet:
+    external: true

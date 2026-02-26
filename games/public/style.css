@@ -1,0 +1,128 @@
+:root {
+  --bg: #0b1220;
+  --panel: #111b2e;
+  --panel-2: #16233a;
+  --text: #e7edf6;
+  --muted: #9fb0cc;
+  --accent: #46d1a2;
+  --danger: #ff6b6b;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
+  background: radial-gradient(circle at 20% 0%, #1c2a45, var(--bg) 55%);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.wrap {
+  width: min(1000px, 100%);
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  border: 1px solid rgba(143, 170, 214, 0.22);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+h1, h2, h3 { margin: 0 0 12px; }
+p { margin: 0 0 10px; color: var(--muted); }
+a { color: #90d4ff; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.btn, button {
+  border: 1px solid rgba(143, 170, 214, 0.34);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.btn:hover, button:hover { background: var(--panel-2); }
+.btn.primary, button.primary {
+  background: #1d6f56;
+  border-color: #2ea47f;
+}
+
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.col { flex: 1 1 280px; }
+
+input, select {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(143, 170, 214, 0.28);
+  background: #0d1729;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.status {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.status.error { color: var(--danger); }
+.status.ok { color: #81f5cf; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 9px 8px;
+  border-bottom: 1px solid rgba(143, 170, 214, 0.18);
+  text-align: left;
+}
+
+#board2048 {
+  width: 300px;
+  height: 300px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tile {
+  border-radius: 10px;
+  background: #23314d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+#tetrisCanvas {
+  background: #05080f;
+  border: 1px solid rgba(143, 170, 214, 0.32);
+}
+
+.reaction-box {
+  width: min(500px, 100%);
+  height: 220px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: #8e2b2b;
+  user-select: none;
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.reaction-box.ready { background: #277747; }

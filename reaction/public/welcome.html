@@ -1,0 +1,119 @@
+﻿<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create Identity</title>
+<style>
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:system-ui;
+  background:#3b82f6;
+  color:white;
+  flex-direction:column;
+}
+.home-link{
+  position:absolute;
+  top:16px;
+  left:16px;
+  color:#fff;
+  text-decoration:none;
+  opacity:.9;
+}
+.home-link:hover{
+  text-decoration:underline;
+}
+input{
+  padding:10px 14px;
+  font-size:16px;
+  border-radius:6px;
+  border:none;
+  margin-top:10px;
+}
+button{
+  padding:10px 14px;
+  margin-top:10px;
+  cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<a class="home-link" href="https://www.xpsxp.org">返回主站</a>
+<h2>Create Your Name</h2>
+<input id="nameInput" placeholder="Enter name (1-20 chars)" maxlength="20">
+<button type="button" id="continueBtn">Continue</button>
+<div id="msg" role="status" aria-live="polite" style="margin-top:8px"></div>
+
+<script>
+function getBrowserId(){
+  let bid=localStorage.getItem("reaction_bid");
+  if(bid) return bid;
+  const bytes=new Uint8Array(16);
+  if(window.crypto && crypto.getRandomValues){
+    crypto.getRandomValues(bytes);
+  } else {
+    for(let i=0;i<16;i++) bytes[i]=Math.floor(Math.random()*256);
+  }
+  bid=Array.from(bytes).map(b=>b.toString(16).padStart(2,"0")).join("");
+  localStorage.setItem("reaction_bid",bid);
+  return bid;
+}
+const bid=getBrowserId();
+
+const msgEl=document.getElementById('msg');
+document.getElementById('continueBtn').addEventListener('click', create);
+
+async function create(){
+  msgEl.textContent='';
+  const name=document.getElementById("nameInput").value.trim();
+  if(name.length<1 || name.length>20){
+    msgEl.textContent="Invalid name";
+    return;
+  }
+
+  try{
+    const r=await fetch("/api/claim",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({bid,name})
+    });
+
+    if(!r.ok){
+      const txt = await r.text().catch(()=>r.statusText || '');
+      msgEl.textContent = `Server error ${r.status}: ${txt || r.statusText}`;
+      console.error('claim failed', r.status, txt);
+      return;
+    }
+
+    let j;
+    try{
+      j = await r.json();
+    }catch(e){
+      const txt = await r.text().catch(()=>'');
+      console.warn('response not json', txt);
+      msgEl.textContent = 'Unexpected server response';
+      console.error(e);
+      return;
+    }
+
+    if(j && j.ok){
+      window.location.href="/modes.html";
+    }else{
+      msgEl.textContent = (j && j.error) ? `Error: ${j.error}` : 'Error creating identity';
+      console.error('claim response', j);
+    }
+  }catch(err){
+    msgEl.textContent='Network error';
+    console.error('network/create error', err);
+  }
+}
+</script>
+
+</body>
+</html>
+

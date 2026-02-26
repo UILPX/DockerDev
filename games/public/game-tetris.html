@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tetris</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="wrap">
+    <h1>Tetris</h1>
+    <div class="nav">
+      <a class="btn" href="/">Home</a>
+      <a class="btn" href="/leaderboard.html">Leaderboard</a>
+    </div>
+    <div class="card">
+      <p>Arrow keys to move, space to hard drop.</p>
+      <div>Score: <b id="score">0</b></div>
+      <canvas id="tetrisCanvas" width="240" height="400"></canvas>
+      <div class="status" id="status"></div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    const W = 10, H = 20, BLOCK = 20;
+    const board = Array.from({ length: H }, () => Array(W).fill(0));
+    const canvas = document.getElementById("tetrisCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreEl = document.getElementById("score");
+    const statusEl = document.getElementById("status");
+    let score = 0;
+    let dropAt = 0;
+    let over = false;
+
+    const PIECES = [
+      [[1,1,1,1]],
+      [[1,1],[1,1]],
+      [[0,1,0],[1,1,1]],
+      [[1,1,0],[0,1,1]],
+      [[0,1,1],[1,1,0]],
+      [[1,0,0],[1,1,1]],
+      [[0,0,1],[1,1,1]]
+    ];
+
+    function randPiece() {
+      const shape = PIECES[Math.floor(Math.random() * PIECES.length)].map(r => [...r]);
+      return { x: 3, y: 0, shape };
+    }
+
+    let cur = randPiece();
+
+    function drawCell(x, y, v) {
+      if (!v) return;
+      ctx.fillStyle = "#69a3ff";
+      ctx.fillRect(x * BLOCK, y * BLOCK, BLOCK - 1, BLOCK - 1);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) drawCell(x, y, board[y][x]);
+      for (let y = 0; y < cur.shape.length; y++) {
+        for (let x = 0; x < cur.shape[y].length; x++) {
+          if (cur.shape[y][x]) drawCell(cur.x + x, cur.y + y, 1);
+        }
+      }
+      scoreEl.textContent = score;
+    }
+
+    function collide(nx = cur.x, ny = cur.y, s = cur.shape) {
+      for (let y = 0; y < s.length; y++) {
+        for (let x = 0; x < s[y].length; x++) {
+          if (!s[y][x]) continue;
+          const tx = nx + x, ty = ny + y;
+          if (tx < 0 || tx >= W || ty >= H) return true;
+          if (ty >= 0 && board[ty][tx]) return true;
+        }
+      }
+      return false;
+    }
+
+    function lockPiece() {
+      for (let y = 0; y < cur.shape.length; y++) {
+        for (let x = 0; x < cur.shape[y].length; x++) {
+          if (!cur.shape[y][x]) continue;
+          const ty = cur.y + y;
+          if (ty < 0) { over = true; return; }
+          board[ty][cur.x + x] = 1;
+        }
+      }
+      clearLines();
+      cur = randPiece();
+      if (collide()) over = true;
+    }
+
+    function clearLines() {
+      let lines = 0;
+      for (let y = H - 1; y >= 0; y--) {
+        if (board[y].every(v => v)) {
+          board.splice(y, 1);
+          board.unshift(Array(W).fill(0));
+          lines++;
+          y++;
+        }
+      }
+      if (lines) {
+        score += lines * lines * 100;
+        submitScore();
+      }
+    }
+
+    function rotate() {
+      const s = cur.shape;
+      const r = s[0].map((_, i) => s.map(row => row[i]).reverse());
+      if (!collide(cur.x, cur.y, r)) cur.shape = r;
+    }
+
+    async function submitScore() {
+      try {
+        await GAMES.api("/api/scores/submit", {
+          method: "POST",
+          body: JSON.stringify({ game: "tetris", value: score })
+        }, true);
+        GAMES.setStatus(statusEl, "Score updated", true);
+      } catch {
+        GAMES.setStatus(statusEl, "Not logged in, score not submitted");
+      }
+    }
+
+    function tick(ts) {
+      if (!dropAt) dropAt = ts + 600;
+      if (!over && ts > dropAt) {
+        dropAt = ts + 600;
+        if (!collide(cur.x, cur.y + 1)) cur.y++;
+        else lockPiece();
+      }
+      draw();
+      if (!over) requestAnimationFrame(tick);
+      else GAMES.setStatus(statusEl, "Game over", false);
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (over) return;
+      if (e.key === "ArrowLeft" && !collide(cur.x - 1, cur.y)) cur.x--;
+      if (e.key === "ArrowRight" && !collide(cur.x + 1, cur.y)) cur.x++;
+      if (e.key === "ArrowDown" && !collide(cur.x, cur.y + 1)) cur.y++;
+      if (e.key === "ArrowUp") rotate();
+      if (e.key === " ") while (!collide(cur.x, cur.y + 1)) cur.y++;
+      draw();
+    });
+
+    requestAnimationFrame(tick);
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d3c9e761cde22ee',t:'MTc3MjA3OTMwMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/v67327c56f0bb4ef8b305cae61679db8f1769101564043" integrity="sha512-rdcWY47ByXd76cbCFzznIcEaCN71jqkWBBqlwhF1SY7KubdLKZiEGeP7AyieKZlGP9hbY/MhGrwXzJC/HulNyg==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

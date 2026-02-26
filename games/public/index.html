@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Games Hub</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="wrap">
+    <h1>Games Hub</h1>
+    <p>One account across mini games and leaderboards.</p>
+
+    <div class="nav">
+      <a class="btn" href="/auth.html">Login / Register</a>
+      <a class="btn" href="/game-2048.html">2048</a>
+      <a class="btn" href="/game-tetris.html">Tetris</a>
+      <a class="btn" href="/game-reaction.html">Reaction</a>
+      <a class="btn" href="/leaderboard.html">Leaderboard</a>
+    </div>
+
+    <div class="card">
+      <h2>Current Account</h2>
+      <div id="me" class="status">Loading...</div>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    (async () => {
+      const meEl = document.getElementById("me");
+      const user = await GAMES.currentUser();
+      if (!user) {
+        meEl.textContent = "Not logged in";
+        return;
+      }
+      meEl.textContent = `${user.display_name} (${user.email})`;
+    })();
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      try {
+        await GAMES.api("/api/auth/logout", { method: "POST" }, true);
+      } catch {}
+      GAMES.clearToken();
+      location.href = "/auth.html";
+    });
+  </script>
+</body>
+</html>

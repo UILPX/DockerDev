@@ -1,0 +1,584 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aim Mode</title>
+
+<style>
+html,body{
+  margin:0;
+  height:100%;
+  font-family:system-ui;
+}
+
+#screen{
+  min-height:100vh;
+  min-height:100dvh;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  cursor:crosshair;
+  text-align:center;
+  transition:background 0.2s ease;
+  padding:20px;
+  user-select:none;
+  overflow:hidden;
+}
+
+#topBar{
+  position:absolute;
+  top:20px;
+  left:20px;
+  right:20px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  z-index:3;
+}
+
+#welcome{
+  position:absolute;
+  top:58px;
+  font-size:16px;
+  z-index:3;
+}
+
+#homeLink,
+#modeLink{
+  color:#fff;
+  text-decoration:none;
+  opacity:.9;
+  font-size:14px;
+}
+#homeLink:hover,
+#modeLink:hover{
+  text-decoration:underline;
+}
+
+#message{
+  font-size:clamp(28px, 5.8vw, 54px);
+  font-weight:700;
+  white-space:pre-line;
+  z-index:3;
+}
+
+#sub{
+  margin-top:8px;
+  font-size:clamp(12px, 3.4vw, 16px);
+  opacity:.95;
+  z-index:3;
+}
+
+#result{
+  margin-top:16px;
+  font-size:clamp(14px, 3.6vw, 20px);
+  white-space:pre-line;
+  z-index:3;
+}
+
+#arena{
+  position:absolute;
+  width:1280px;
+  height:720px;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  z-index:1;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,0.18);
+}
+
+#dot{
+  position:absolute;
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  background:#facc15;
+  box-shadow:0 0 0 2px rgba(0,0,0,0.4);
+  opacity:0;
+  pointer-events:none;
+  will-change:transform, opacity;
+}
+
+#leaderboardMeta{
+  margin-top:14px;
+  width:100%;
+  max-width:min(900px, 92vw);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:clamp(12px, 3.2vw, 14px);
+  gap:12px;
+  flex-wrap:wrap;
+  z-index:3;
+}
+
+#leaderboardLink{
+  color:#fff;
+  text-decoration:none;
+  opacity:.9;
+}
+#leaderboardLink:hover{
+  text-decoration:underline;
+}
+
+#leaderboard{
+  width:100%;
+  max-width:min(900px, 92vw);
+  overflow-x:auto;
+  z-index:3;
+}
+
+table{
+  border-collapse:collapse;
+  margin-top:20px;
+  width:100%;
+  font-size:clamp(12px, 2.8vw, 14px);
+}
+
+td,th{
+  border:1px solid #fff;
+  padding:6px 10px;
+  text-align:left;
+  word-break:break-word;
+}
+
+.me-row{
+  background:rgba(255,255,255,0.12);
+  font-weight:600;
+}
+
+.blocked{
+  cursor:not-allowed;
+}
+
+@media (max-width: 520px){
+  #leaderboardMeta{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+  td,th{
+    padding:6px 6px;
+  }
+  th{
+    white-space:nowrap;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div id="screen">
+  <div id="topBar">
+    <a id="homeLink" href="https://www.xpsxp.org">返回主站</a>
+    <a id="modeLink" href="/">返回模式选择</a>
+  </div>
+  <div id="welcome"></div>
+  <div id="message">Loading...</div>
+  <div id="sub"></div>
+  <div id="result"></div>
+  <div id="leaderboardMeta" style="display:none;">
+    <div id="myRank"></div>
+    <a id="leaderboardLink" href="/leaderboard.html?mode=aim">完整排行榜</a>
+  </div>
+  <div id="leaderboard" style="display:none;"></div>
+  <div id="arena">
+    <div id="dot"></div>
+  </div>
+</div>
+
+<script>
+const browserLang = (navigator.language || "").toLowerCase();
+const lang = browserLang.includes("zh") ? "zh" : "en";
+
+const T = {
+  en: {
+    loading: "Aim Mode",
+    welcomeBack: (n) => `Welcome back, ${n}`,
+    clickToStart: "Click to start",
+    waiting: "Wait...",
+    tooEarly: "Too early",
+    go: "Hit the dot",
+    progress: (i, total, miss) => `Hits: ${i}/${total}   Misses: ${miss}`,
+    result: (avg, miss, score) => `Average: ${avg} ms\nMisses: ${miss}\nScore: ${score}`,
+    best: (b) => `Best score: ${b}`,
+    rankLine: (r) => `Your rank: #${r}`,
+    blocked: "Desktop only. Mobile devices are not allowed."
+  },
+  zh: {
+    loading: "瞄准模式",
+    welcomeBack: (n) => `欢迎回来，${n}`,
+    clickToStart: "点击开始",
+    waiting: "等待...",
+    tooEarly: "太早了",
+    go: "点击小点",
+    progress: (i, total, miss) => `命中：${i}/${total}   失误：${miss}`,
+    result: (avg, miss, score) => `平均：${avg} ms\n失误：${miss}\n得分：${score}`,
+    best: (b) => `最好得分：${b}`,
+    rankLine: (r) => `当前名次：第 ${r} 名`,
+    blocked: "仅限电脑端参与，移动端不开放。"
+  }
+};
+
+const TARGETS = 20;
+const DOT_RADIUS = 12;
+const MISS_PENALTY = 150;
+const SCORE_SCALE = 100000;
+const STAGE_WIDTH = 1280;
+const STAGE_HEIGHT = 720;
+
+const screen = document.getElementById("screen");
+const message = document.getElementById("message");
+const sub = document.getElementById("sub");
+const result = document.getElementById("result");
+const dot = document.getElementById("dot");
+const arena = document.getElementById("arena");
+const leaderboardDiv = document.getElementById("leaderboard");
+const myRankDiv = document.getElementById("myRank");
+const leaderboardMeta = document.getElementById("leaderboardMeta");
+
+const isCoarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+const isMobileUA = /android|iphone|ipad|ipod|mobile|phone|tablet|iemobile/i.test(navigator.userAgent || "");
+const blocked = isCoarse || isMobileUA;
+const sizeBlockedText = lang === "zh"
+  ? "请使用至少 1280x720 的窗口尺寸参与（建议全屏）。"
+  : "Use at least a 1280x720 window size to play (fullscreen recommended).";
+
+function setScreen(color, msg){
+  screen.style.background = color;
+  message.textContent = msg;
+}
+
+function mapRawToScore(raw){
+  return Math.max(0, Math.round(SCORE_SCALE / Math.max(raw, 1)));
+}
+
+// ==========================
+// Identity
+// ==========================
+function getBrowserId(){
+  let bid=localStorage.getItem("reaction_bid");
+  if(bid) return bid;
+  const bytes=new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bid=Array.from(bytes).map(b=>b.toString(16).padStart(2,"0")).join("");
+  localStorage.setItem("reaction_bid",bid);
+  return bid;
+}
+const bid=getBrowserId();
+
+let myName=null;
+let hasResult=false;
+let welcomeHideTimer=null;
+
+async function checkIdentity(){
+  const r=await fetch(`/api/me?bid=${bid}`);
+  const j=await r.json();
+  if(!j.ok || !j.claimed){
+    window.location.href="/welcome.html";
+    return;
+  }
+  myName=j.name;
+  document.getElementById("welcome").textContent=
+    T[lang].welcomeBack(myName);
+  scheduleWelcomeHide();
+  reset();
+  applySizeGate();
+}
+
+function scheduleWelcomeHide(){
+  const welcomeEl = document.getElementById("welcome");
+  if (!welcomeEl) return;
+  welcomeEl.style.display = "";
+  if (welcomeHideTimer) clearTimeout(welcomeHideTimer);
+  welcomeHideTimer = setTimeout(() => {
+    welcomeEl.style.display = "none";
+  }, 5000);
+}
+
+// ==========================
+// Aim Logic
+// ==========================
+let state="idle";
+let hits=[];
+let misses=0;
+let current=0;
+let targetShownAt=0;
+let lastPos=null;
+let timeout=null;
+let sizeBlocked=false;
+
+function hideLeaderboard(){
+  leaderboardMeta.style.display = "none";
+  leaderboardDiv.style.display = "none";
+}
+
+function showLeaderboard(){
+  if (!hasResult) return;
+  leaderboardMeta.style.display = "flex";
+  leaderboardDiv.style.display = "block";
+}
+
+function eventTime(evt){
+  if (!evt || typeof evt.timeStamp !== "number") return performance.now();
+  return evt.timeStamp > 0 ? evt.timeStamp : performance.now();
+}
+
+function checkSizeBlocked(){
+  return window.innerWidth < STAGE_WIDTH || window.innerHeight < STAGE_HEIGHT;
+}
+
+function applySizeGate(){
+  if (blocked) return;
+  sizeBlocked = checkSizeBlocked();
+  if (sizeBlocked) {
+    if (timeout) { clearTimeout(timeout); timeout=null; }
+    state="size-locked";
+    dot.style.opacity=0;
+    setScreen("#0f172a", sizeBlockedText);
+    sub.textContent = "";
+    result.textContent = "";
+    message.style.display = "";
+    sub.style.display = "";
+    return;
+  }
+  if (state === "size-locked") {
+    reset();
+  }
+}
+
+function reset(){
+  if (timeout) { clearTimeout(timeout); timeout=null; }
+  state="idle";
+  hits=[];
+  misses=0;
+  current=0;
+  lastPos=null;
+  dot.style.opacity=0;
+  message.style.display="";
+  sub.style.display="";
+  sub.textContent="";
+  result.textContent="";
+  setScreen("#3b82f6", T[lang].clickToStart);
+}
+
+function getBounds(){
+  const safeTop = 84;
+  const safeBottom = 84;
+  const safeSide = 28;
+  return {
+    left: safeSide + DOT_RADIUS,
+    right: STAGE_WIDTH - safeSide - DOT_RADIUS,
+    top: safeTop + DOT_RADIUS,
+    bottom: STAGE_HEIGHT - safeBottom - DOT_RADIUS
+  };
+}
+
+function placeDot(){
+  const bounds = getBounds();
+  let x=0, y=0, tries=0;
+  do{
+    x = bounds.left + Math.random() * (bounds.right - bounds.left);
+    y = bounds.top + Math.random() * (bounds.bottom - bounds.top);
+    tries++;
+  } while (lastPos && Math.hypot(x - lastPos.x, y - lastPos.y) < 80 && tries < 6);
+  lastPos = { x, y };
+  dot.style.transform = `translate3d(${Math.round(x - DOT_RADIUS)}px, ${Math.round(y - DOT_RADIUS)}px, 0)`;
+  dot.style.opacity = 1;
+  if ("requestAnimationFrame" in window) {
+    requestAnimationFrame(()=>{ targetShownAt = performance.now(); });
+  } else {
+    targetShownAt = performance.now();
+  }
+}
+
+function startRun(){
+  if (sizeBlocked) return;
+  reset();
+  hideLeaderboard();
+  state="waiting";
+  setScreen("#dc2626", T[lang].waiting);
+  timeout = setTimeout(()=>{
+    state="aiming";
+    setScreen("#1d4ed8", T[lang].go);
+    placeDot();
+    sub.textContent = T[lang].progress(current, TARGETS, misses);
+  }, Math.random()*800 + 500);
+}
+
+function nextTarget(){
+  if (current >= TARGETS) return finish();
+  state="aiming";
+  placeDot();
+  sub.textContent = T[lang].progress(current, TARGETS, misses);
+}
+
+function finish(){
+  state="result";
+  dot.style.opacity=0;
+  message.style.display="";
+  sub.style.display="";
+  sub.textContent="";
+  const avg = Math.round(hits.reduce((a,b)=>a+b,0) / TARGETS);
+  const raw = avg + misses * MISS_PENALTY;
+  const score = mapRawToScore(raw);
+  setScreen("#3b82f6", T[lang].clickToStart);
+  result.textContent = T[lang].result(avg, misses, score);
+  submitResult(avg, misses, score);
+}
+
+async function submitResult(avg, miss, score){
+  try{
+    const r = await fetch("/api/aim/submit",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        name: myName,
+        hits: hits,
+        misses: miss,
+        score: score
+      })
+    });
+    const j = await r.json();
+    if (j.ok) {
+      const mappedBest = mapRawToScore(j.best_score);
+      result.textContent += "\n" + T[lang].best(mappedBest);
+      if (!hasResult) {
+        hasResult = true;
+      }
+      showLeaderboard();
+      loadLeaderboard();
+    }
+  } catch(e){
+    // ignore
+  }
+}
+
+let lastActionAt=0;
+let handlingAction=false;
+const ACTION_DEBOUNCE_MS = 200;
+function handleAction(evt){
+  if (blocked || sizeBlocked) return;
+  if (handlingAction) return;
+  handlingAction=true;
+  setTimeout(()=>{ handlingAction=false; }, 50);
+  if (evt && typeof evt.detail === "number" && evt.detail > 1) return;
+  const now = Date.now();
+  if (now - lastActionAt < ACTION_DEBOUNCE_MS) return;
+  lastActionAt = now;
+  if (evt.target && evt.target.closest && evt.target.closest("a")) return;
+
+  if (state === "idle") {
+    startRun();
+    return;
+  }
+  if (state === "result") {
+    startRun();
+    return;
+  }
+  if (state === "waiting") {
+    setScreen("#dc2626", T[lang].tooEarly);
+    timeout = setTimeout(reset, 600);
+    return;
+  }
+  if (state === "aiming") {
+    const rect = arena.getBoundingClientRect();
+    const x = evt.clientX - rect.left;
+    const y = evt.clientY - rect.top;
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
+    const dist = Math.hypot(x - lastPos.x, y - lastPos.y);
+    if (dist <= DOT_RADIUS) {
+      const ms = Math.round(eventTime(evt) - targetShownAt);
+      hits.push(ms);
+      current++;
+      if (current === 1) {
+        message.style.display="none";
+        sub.style.display="none";
+      }
+      state="cooldown";
+      dot.style.opacity=0;
+      sub.textContent = T[lang].progress(current, TARGETS, misses);
+      timeout = setTimeout(nextTarget, 220);
+    } else {
+      misses++;
+      sub.textContent = T[lang].progress(current, TARGETS, misses);
+    }
+  }
+}
+
+if (blocked) {
+  screen.classList.add("blocked");
+  setScreen("#0f172a", T[lang].blocked);
+  sub.textContent = "";
+} else if (window.PointerEvent) {
+  screen.addEventListener("pointerdown", handleAction, { passive: true });
+} else {
+  screen.addEventListener("mousedown", handleAction);
+}
+if (!blocked) {
+  applySizeGate();
+  window.addEventListener("resize", applySizeGate, { passive: true });
+}
+
+// ==========================
+// Leaderboard
+// ==========================
+async function loadLeaderboard(){
+  const r=await fetch(`/api/aim/leaderboard?name=${encodeURIComponent(myName)}`);
+  const j=await r.json();
+  if(!j.ok) return;
+
+  let html="<table><tr><th>#</th><th>Name</th><th>Score</th><th>Avg</th><th>Misses</th></tr>";
+  const inTop = j.rows.some((row)=>row.name===myName);
+  j.rows.forEach((row,i)=>{
+    const meClass = row.name===myName ? " class='me-row'" : "";
+    html+=`<tr${meClass}>
+      <td>${i+1}</td>
+      <td>${row.name}</td>
+      <td>${mapRawToScore(row.best_score)}</td>
+      <td>${row.avg_ms}</td>
+      <td>${row.misses}</td>
+    </tr>`;
+  });
+  if (j.me && j.me.rank && (!inTop || j.me.rank > j.rows.length)) {
+    html+=`<tr class="me-row">
+      <td>${j.me.rank}</td>
+      <td>${j.me.name}</td>
+      <td>${mapRawToScore(j.me.best_score)}</td>
+      <td>${j.me.avg_ms}</td>
+      <td>${j.me.misses}</td>
+    </tr>`;
+  }
+  html+="</table>";
+  leaderboardDiv.innerHTML=html;
+  myRankDiv.textContent = j.me && j.me.rank ? T[lang].rankLine(j.me.rank) : "";
+}
+
+// ==========================
+// Start
+// ==========================
+setScreen("#3b82f6", T[lang].loading);
+if (!blocked) checkIdentity();
+</script>
+
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d35068e1d04e80a',t:'MTc3MTk5OTY3OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d350b9248ecc0b2',t:'MTc3MTk5OTg4NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d350cb92e99c0b2',t:'MTc3MTk5OTkzMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d3515bef9c413f8',t:'MTc3MjAwMDMwMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d35160e9cbc13f8',t:'MTc3MjAwMDMxNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d35165b5f2913f8',t:'MTc3MjAwMDMyNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d35174f6f9513f8',t:'MTc3MjAwMDM2NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d3517dbde2813f8',t:'MTc3MjAwMDM4OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d351847287013f8',t:'MTc3MjAwMDQwNQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d35193b4fd113f8',t:'MTc3MjAwMDQ0NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d351995789e13f8',t:'MTc3MjAwMDQ1OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d3519d92e4d13f8',t:'MTc3MjAwMDQ2OQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d351c978c6de894',t:'MTc3MjAwMDU4Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
