@@ -1,3 +1,6 @@
 
 # Exclude zerotier entirely
 zerotier/
+
+# local runtime sqlite data
+reaction/data/data.db
