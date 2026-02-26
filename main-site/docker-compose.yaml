@@ -1,10 +1,9 @@
 services:
   main-site:
-    build: .
+    image: ghcr.io/uilpx/main-site:latest
+    pull_policy: always
     container_name: main-site
     restart: unless-stopped
-    volumes:
-      - ./public:/app/public
     networks:
       webnet:
         aliases:
