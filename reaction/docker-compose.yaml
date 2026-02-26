@@ -1,11 +1,11 @@
 services:
   reaction:
-    image: ghcr.io/uilpx/reaction:${IMAGE_TAG:-latest}
+    image: ghcr.io/uilpx/reaction:latest
     pull_policy: always
     container_name: reaction
     restart: unless-stopped
     volumes:
-      - ${REACTION_DB_PATH:-./data/data.db}:/app/data/data.db
+      - ./data/data.db:/app/data/data.db
     networks:
       webnet:
         aliases:

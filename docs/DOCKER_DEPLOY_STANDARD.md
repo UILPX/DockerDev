@@ -9,10 +9,10 @@
 - `deploy/docker-compose.ghcr.yaml`
   - 单文件编排，统一从 `ghcr.io` 拉取各服务镜像。
   - 适合图形化 Docker 界面直接导入。
-- `deploy/.env.example`
-  - 环境变量模板，复制为 `.env` 后按需调整镜像 tag、数据文件路径、可选业务变量。
 - `deploy/scripts/update-prod.sh`
   - 生产更新脚本：拉最新镜像、重建容器、清理旧镜像、确保数据库文件存在。
+
+> 当前规范：**不依赖 `.env` 文件**，所有部署关键值直接写在 YAML 中。
 
 ## 2. 服务目录结构规范
 
@@ -31,12 +31,12 @@ abc/
 ### 数据路径约定
 
 - 统一容器内路径：`/app/data/data.db`
-- 统一服务目录内默认宿主机路径：`./data/data.db`
+- 统一服务目录内宿主机路径：`./data/data.db`
 - 新服务 `abc` 默认映射应为：
 
 ```yaml
 volumes:
-  - ${ABC_DB_PATH:-./data/data.db}:/app/data/data.db
+  - ./data/data.db:/app/data/data.db
 ```
 
 ## 3. 网络规范
@@ -69,12 +69,12 @@ networks:
 ```yaml
 services:
   abc:
-    image: ghcr.io/uilpx/abc:${IMAGE_TAG:-latest}
+    image: ghcr.io/uilpx/abc:latest
     pull_policy: always
     container_name: abc
     restart: unless-stopped
     volumes:
-      - ${ABC_DB_PATH:-./data/data.db}:/app/data/data.db
+      - ./data/data.db:/app/data/data.db
     networks:
       webnet:
         aliases:
@@ -106,12 +106,11 @@ CI 会自动把 `abc` 也纳入构建并推送，无需再手改矩阵。
 2. 新建 `abc/docker-compose.yaml`（按上面模板）
 3. 新建 `abc/data/data.db`（首次可空文件）
 4. 在 `deploy/docker-compose.ghcr.yaml` 增加 `abc` 服务段
-5. 在 `deploy/.env.example` 增加 `ABC_DB_PATH=./volumes/abc/data.db`
-6. 生产环境创建宿主机文件并部署
+5. 在生产环境创建宿主机数据库文件并部署
 
 ## 7. 生产部署建议
 
 - 首次部署前先创建 `webnet` 外部网络
-- 优先使用固定 tag（比如 commit SHA）做回滚
+- 优先使用固定 tag（比如 commit SHA）做回滚（若要回滚可临时改为 `:sha`）
 - 定期执行 `docker image prune -af` 清理旧层
 - 确认 GHCR 包可见性/权限（private 包需凭据）

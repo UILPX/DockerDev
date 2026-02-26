@@ -1,6 +1,6 @@
 services:
   main-site:
-    image: ghcr.io/uilpx/main-site:${IMAGE_TAG:-latest}
+    image: ghcr.io/uilpx/main-site:latest
     pull_policy: always
     container_name: main-site
     restart: unless-stopped

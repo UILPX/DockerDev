@@ -1,6 +1,6 @@
 services:
   games:
-    image: ghcr.io/uilpx/games:${IMAGE_TAG:-latest}
+    image: ghcr.io/uilpx/games:latest
     pull_policy: always
     container_name: games
     restart: unless-stopped
@@ -12,7 +12,7 @@ services:
       - SMTP_PASS=${GAMES_SMTP_PASS:-}
       - SMTP_FROM=${GAMES_SMTP_FROM:-}
     volumes:
-      - ${GAMES_DB_PATH:-./data/data.db}:/app/data/data.db
+      - ./data/data.db:/app/data/data.db
     networks:
       webnet:
         aliases:

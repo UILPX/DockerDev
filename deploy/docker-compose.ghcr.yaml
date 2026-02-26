@@ -2,38 +2,38 @@ name: xpsxp-stack
 
 services:
   games:
-    image: ghcr.io/uilpx/games:${IMAGE_TAG:-latest}
+    image: ghcr.io/uilpx/games:latest
     pull_policy: always
     container_name: games
     restart: unless-stopped
     environment:
-      - PUBLIC_BASE_URL=${GAMES_PUBLIC_BASE_URL:-https://games.xpsxp.org}
-      - SMTP_HOST=${GAMES_SMTP_HOST:-}
-      - SMTP_PORT=${GAMES_SMTP_PORT:-587}
-      - SMTP_USER=${GAMES_SMTP_USER:-}
-      - SMTP_PASS=${GAMES_SMTP_PASS:-}
-      - SMTP_FROM=${GAMES_SMTP_FROM:-}
+      - PUBLIC_BASE_URL=https://games.xpsxp.org
+      - SMTP_HOST=
+      - SMTP_PORT=587
+      - SMTP_USER=
+      - SMTP_PASS=
+      - SMTP_FROM=
     volumes:
-      - ${GAMES_DB_PATH:-./volumes/games/data.db}:/app/data/data.db
+      - ./volumes/games/data.db:/app/data/data.db
     networks:
       webnet:
         aliases:
           - games
 
   reaction:
-    image: ghcr.io/uilpx/reaction:${IMAGE_TAG:-latest}
+    image: ghcr.io/uilpx/reaction:latest
     pull_policy: always
     container_name: reaction
     restart: unless-stopped
     volumes:
-      - ${REACTION_DB_PATH:-./volumes/reaction/data.db}:/app/data/data.db
+      - ./volumes/reaction/data.db:/app/data/data.db
     networks:
       webnet:
         aliases:
           - reaction
 
   main-site:
-    image: ghcr.io/uilpx/main-site:${IMAGE_TAG:-latest}
+    image: ghcr.io/uilpx/main-site:latest
     pull_policy: always
     container_name: main-site
     restart: unless-stopped

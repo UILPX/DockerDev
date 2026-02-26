@@ -164,9 +164,9 @@
 Added `deploy/docker-compose.ghcr.yaml` so a NAS GUI can import **one compose source** and pull all three service images (`games`, `reaction`, `main-site`) from GHCR in one shot.
 
 Usage:
-- Copy `deploy/.env.example` to `deploy/.env` and adjust optional variables if needed.
-- Create database files referenced by `GAMES_DB_PATH` and `REACTION_DB_PATH` before first run.
-- Import `deploy/docker-compose.ghcr.yaml` in your Docker GUI (or run with `docker compose --env-file deploy/.env -f deploy/docker-compose.ghcr.yaml up -d`).
+- Import `deploy/docker-compose.ghcr.yaml` directly in Docker GUI (no `.env` required).
+- Create database files `./volumes/games/data.db` and `./volumes/reaction/data.db` before first run (relative to `deploy/`).
+- Import `deploy/docker-compose.ghcr.yaml` in your Docker GUI (or run with `docker compose -f deploy/docker-compose.ghcr.yaml up -d`).
 
 ## Production-ready compose rewrite
 
@@ -176,7 +176,6 @@ For one-shot NAS/server updates, run:
 
 ```bash
 cd deploy
-cp .env.example .env
 ./scripts/update-prod.sh
 ```
 
