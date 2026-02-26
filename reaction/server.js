@@ -1,4 +1,5 @@
 const path = require("path");
+const crypto = require("crypto");
 const express = require("express");
 const Database = require("better-sqlite3");
 
@@ -6,6 +7,27 @@ const app = express();
 app.use(express.json());
 
 const db = new Database("/app/data/data.db");
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS identities (
+    browser_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS simple_scores (
+    name TEXT PRIMARY KEY,
+    best_ms INTEGER NOT NULL,
+    false_starts INTEGER NOT NULL DEFAULT 0,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS pro_scores (
+    name TEXT PRIMARY KEY,
+    best_ms INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+`);
 
 // ==========================
 // AIM MODE
@@ -95,6 +117,14 @@ db.exec(`
   )
 `);
 
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS simple_used_challenges (
+    token_hash TEXT PRIMARY KEY,
+    used_at INTEGER NOT NULL
+  )
+`);
+
 // ==========================
 // Identity
 // ==========================
@@ -137,31 +167,114 @@ app.post("/api/claim", (req, res) => {
 // SIMPLE MODE
 // ==========================
 
+const SIMPLE_MIN_MS = 80;
+const SIMPLE_MAX_MS = 5000;
+const SIMPLE_CHALLENGE_TTL_MS = 12000;
+const SIMPLE_CHALLENGE_SECRET = process.env.SIMPLE_CHALLENGE_SECRET || "replace-this-secret";
+
+function sha256Hex(input) {
+  return crypto.createHash("sha256").update(input).digest("hex");
+}
+
+function signSimpleChallenge(payloadBase64) {
+  return crypto.createHmac("sha256", SIMPLE_CHALLENGE_SECRET).update(payloadBase64).digest("hex");
+}
+
+function encodeSimpleChallenge(payloadObj) {
+  const payloadBase64 = Buffer.from(JSON.stringify(payloadObj), "utf8").toString("base64url");
+  const signature = signSimpleChallenge(payloadBase64);
+  return `${payloadBase64}.${signature}`;
+}
+
+function decodeSimpleChallenge(token) {
+  if (!token || typeof token !== "string") return null;
+  const [payloadBase64, sig] = token.split(".");
+  if (!payloadBase64 || !sig) return null;
+  const expected = signSimpleChallenge(payloadBase64);
+  const sigBuf = Buffer.from(sig, "hex");
+  const expBuf = Buffer.from(expected, "hex");
+  if (sigBuf.length !== expBuf.length) return null;
+  if (!crypto.timingSafeEqual(sigBuf, expBuf)) return null;
+  try {
+    const json = Buffer.from(payloadBase64, "base64url").toString("utf8");
+    return JSON.parse(json);
+  } catch (_err) {
+    return null;
+  }
+}
+
+function consumeSimpleChallenge(token, nowTs) {
+  const tokenHash = sha256Hex(token);
+  const existed = db.prepare("SELECT token_hash FROM simple_used_challenges WHERE token_hash=?").get(tokenHash);
+  if (existed) return false;
+  db.prepare("INSERT INTO simple_used_challenges (token_hash, used_at) VALUES (?, ?)").run(tokenHash, nowTs);
+  return true;
+}
+
+app.post("/api/simple/challenge", (req, res) => {
+  const { bid, name } = req.body || {};
+  if (!bid || !name || typeof bid !== "string" || typeof name !== "string") {
+    return res.status(400).json({ ok: false, error: "invalid input" });
+  }
+
+  const nowTs = Date.now();
+  const readyAt = nowTs + 1000 + Math.floor(Math.random() * 3000);
+  const expiresAt = readyAt + SIMPLE_CHALLENGE_TTL_MS;
+  const nonce = crypto.randomBytes(16).toString("hex");
+  const token = encodeSimpleChallenge({ bid, name, readyAt, expiresAt, nonce, v: 1 });
+  res.json({ ok: true, token, ready_at: readyAt });
+});
+
 app.post("/api/simple/submit", (req, res) => {
-  const { name, ms, falseStarts, bid } = req.body;
-  const now = Date.now();
+  const { name, ms, falseStarts, bid, challengeToken } = req.body || {};
+  if (!name || typeof name !== "string" || name.length < 1 || name.length > 20) {
+    return res.status(400).json({ ok: false, error: "invalid name" });
+  }
+  if (!bid || typeof bid !== "string") {
+    return res.status(400).json({ ok: false, error: "invalid bid" });
+  }
+  if (!Number.isInteger(ms) || ms < SIMPLE_MIN_MS || ms > SIMPLE_MAX_MS) {
+    return res.status(400).json({ ok: false, error: "invalid ms" });
+  }
+
+  const nowTs = Date.now();
+  db.prepare("DELETE FROM simple_used_challenges WHERE used_at < ?").run(nowTs - 24 * 60 * 60 * 1000);
+
+  const challenge = decodeSimpleChallenge(challengeToken);
+  if (!challenge || challenge.v !== 1) {
+    return res.status(400).json({ ok: false, error: "invalid challenge" });
+  }
+  if (challenge.bid !== bid || challenge.name !== name) {
+    return res.status(400).json({ ok: false, error: "challenge mismatch" });
+  }
+  if (nowTs < challenge.readyAt) {
+    return res.status(400).json({ ok: false, error: "too early" });
+  }
+  if (nowTs > challenge.expiresAt) {
+    return res.status(400).json({ ok: false, error: "challenge expired" });
+  }
+  if (!consumeSimpleChallenge(challengeToken, nowTs)) {
+    return res.status(400).json({ ok: false, error: "challenge already used" });
+  }
+
   const pendingFalseStarts = bid
     ? (db.prepare("SELECT pending_count FROM simple_false_start_cycles WHERE browser_id=?").get(bid)?.pending_count || 0)
     : (falseStarts || 0);
 
-  const row = db.prepare(
-    "SELECT best_ms FROM simple_scores WHERE name=?"
-  ).get(name);
+  const row = db.prepare("SELECT best_ms FROM simple_scores WHERE name=?").get(name);
 
   if (!row) {
     db.prepare(
       "INSERT INTO simple_scores (name, best_ms, false_starts, updated_at) VALUES (?, ?, ?, ?)"
-    ).run(name, ms, pendingFalseStarts, now);
-    if (bid) {
-      db.prepare(`
-        INSERT INTO simple_false_start_cycles (browser_id, name, pending_count, updated_at)
-        VALUES (?, ?, 0, ?)
-        ON CONFLICT(browser_id) DO UPDATE SET
-          pending_count = 0,
-          name = excluded.name,
-          updated_at = excluded.updated_at
-      `).run(bid, name, now);
-    }
+    ).run(name, ms, pendingFalseStarts, nowTs);
+    db.prepare(`
+      INSERT INTO simple_false_start_cycles (browser_id, name, pending_count, updated_at)
+      VALUES (?, ?, 0, ?)
+      ON CONFLICT(browser_id) DO UPDATE SET
+        pending_count = 0,
+        name = excluded.name,
+        updated_at = excluded.updated_at
+    `).run(bid, name, nowTs);
     return res.json({
       ok: true,
       best_ms: ms,
@@ -174,17 +287,15 @@ app.post("/api/simple/submit", (req, res) => {
   if (ms < row.best_ms) {
     db.prepare(
       "UPDATE simple_scores SET best_ms=?, false_starts=?, updated_at=? WHERE name=?"
-    ).run(ms, pendingFalseStarts, now, name);
-    if (bid) {
-      db.prepare(`
-        INSERT INTO simple_false_start_cycles (browser_id, name, pending_count, updated_at)
-        VALUES (?, ?, 0, ?)
-        ON CONFLICT(browser_id) DO UPDATE SET
-          pending_count = 0,
-          name = excluded.name,
-          updated_at = excluded.updated_at
-      `).run(bid, name, now);
-    }
+    ).run(ms, pendingFalseStarts, nowTs, name);
+    db.prepare(`
+      INSERT INTO simple_false_start_cycles (browser_id, name, pending_count, updated_at)
+      VALUES (?, ?, 0, ?)
+      ON CONFLICT(browser_id) DO UPDATE SET
+        pending_count = 0,
+        name = excluded.name,
+        updated_at = excluded.updated_at
+    `).run(bid, name, nowTs);
     return res.json({
       ok: true,
       best_ms: ms,
@@ -296,6 +407,27 @@ app.get("/api/pro/leaderboard/all", (req, res) => {
   ).all();
   res.json({ ok: true, rows });
 });
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS identities (
+    browser_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS simple_scores (
+    name TEXT PRIMARY KEY,
+    best_ms INTEGER NOT NULL,
+    false_starts INTEGER NOT NULL DEFAULT 0,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS pro_scores (
+    name TEXT PRIMARY KEY,
+    best_ms INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+`);
 
 // ==========================
 // AIM MODE

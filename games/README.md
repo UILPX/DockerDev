@@ -15,6 +15,16 @@ cd z:\docker\games
 docker compose up -d --build
 ```
 
+
+## 自检（推荐）
+先启动服务后执行：
+```bash
+cd /workspace/DockerDev/games
+npm run smoke
+```
+
+该脚本会自动验证：健康检查、注册、邮箱验证、登录、提交分数、排行榜查询。
+
 ## 邮件配置（可选）
 在 `docker-compose.yaml` 里填：
 - `SMTP_HOST`
