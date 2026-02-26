@@ -270,10 +270,7 @@ async function recordFalseStart(){
 // ==========================
 let state="idle";
 let startTime=null;
-let readyTimeout=null;
 let falseStarts=0;
-let activeChallengeToken="";
-let readyAtServer=0;
 
 const screen=document.getElementById("screen");
 const message=document.getElementById("message");
@@ -294,23 +291,7 @@ function reset(){
 }
 
 const isCoarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-const ACTION_DEBOUNCE_MS = isCoarse ? 450 : 200;
-let lastActionAt=0;
 let handlingAction=false;
-async function requestChallenge(){
-  const r = await fetch("/api/simple/challenge", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ bid, name: myName })
-  });
-  const j = await r.json();
-  if (!j.ok || !j.token || !j.ready_at) {
-    throw new Error("challenge failed");
-  }
-  activeChallengeToken = j.token;
-  readyAtServer = Number(j.ready_at);
-  return j;
-}
 
 function enterReadyState(){
   state="ready";
@@ -323,41 +304,18 @@ async function handleAction(evt){
   handlingAction=true;
   setTimeout(()=>{ handlingAction=false; }, 30);
   if (evt && typeof evt.detail === "number" && evt.detail > 1) return;
-  const now=Date.now();
-  if(now-lastActionAt<ACTION_DEBOUNCE_MS) return;
-  lastActionAt=now;
   if (evt.target && evt.target.closest && evt.target.closest("a")) return;
 
   if(state==="idle"){
-    state="waiting";
-    setScreen("#dc2626", T[lang].waitGreen);
-    try {
-      const challenge = await requestChallenge();
-      const delay = Math.max(0, Number(challenge.ready_at) - Date.now());
-      if (readyTimeout) clearTimeout(readyTimeout);
-      readyTimeout = setTimeout(() => {
-        if (state !== "waiting") return;
-        if (!isCoarse && "requestAnimationFrame" in window) {
-          requestAnimationFrame(enterReadyState);
-        } else {
-          enterReadyState();
-        }
-      }, delay);
-    } catch (_err) {
-      state="idle";
-      activeChallengeToken = "";
-      setScreen("#3b82f6", T[lang].challengeError);
-    }
+    enterReadyState();
     return;
   }
 
   if(state==="waiting"){
     falseStarts++;
-    if (readyTimeout) clearTimeout(readyTimeout);
     await recordFalseStart();
     setScreen("#3b82f6", T[lang].tooEarly);
     state="idle";
-    activeChallengeToken = "";
     return;
   }
 
@@ -374,19 +332,15 @@ async function handleAction(evt){
         name: myName,
         bid: bid,
         ms: ms,
-        falseStarts: falseStarts,
-        challengeToken: activeChallengeToken,
-        rtObservedAt: readyAtServer
+        falseStarts: falseStarts
       })
     });
     const j=await r.json();
     if (!j.ok) {
       result.textContent = `${T[lang].challengeError}
 ${j.error || "submit failed"}`;
-      activeChallengeToken = "";
       return;
     }
-    activeChallengeToken = "";
     if (typeof j.pending_false_starts === "number") {
       pendingFalseStarts = j.pending_false_starts;
       renderWelcome();
@@ -466,4 +420,3 @@ checkIdentity();
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d34d342fc67eb6a',t:'MTc3MTk5NzU3OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d350b93ecbbc0b2',t:'MTc3MTk5OTg4NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"23a4e4680985457fa4ecb61d81dc541f","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
-

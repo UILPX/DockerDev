@@ -167,95 +167,21 @@ app.post("/api/claim", (req, res) => {
 // SIMPLE MODE
 // ==========================
 
-const SIMPLE_MIN_MS = 80;
 const SIMPLE_MAX_MS = 5000;
-const SIMPLE_CHALLENGE_TTL_MS = 12000;
-const SIMPLE_CHALLENGE_SECRET = process.env.SIMPLE_CHALLENGE_SECRET || "replace-this-secret";
-
-function sha256Hex(input) {
-  return crypto.createHash("sha256").update(input).digest("hex");
-}
-
-function signSimpleChallenge(payloadBase64) {
-  return crypto.createHmac("sha256", SIMPLE_CHALLENGE_SECRET).update(payloadBase64).digest("hex");
-}
-
-function encodeSimpleChallenge(payloadObj) {
-  const payloadBase64 = Buffer.from(JSON.stringify(payloadObj), "utf8").toString("base64url");
-  const signature = signSimpleChallenge(payloadBase64);
-  return `${payloadBase64}.${signature}`;
-}
-
-function decodeSimpleChallenge(token) {
-  if (!token || typeof token !== "string") return null;
-  const [payloadBase64, sig] = token.split(".");
-  if (!payloadBase64 || !sig) return null;
-  const expected = signSimpleChallenge(payloadBase64);
-  const sigBuf = Buffer.from(sig, "hex");
-  const expBuf = Buffer.from(expected, "hex");
-  if (sigBuf.length !== expBuf.length) return null;
-  if (!crypto.timingSafeEqual(sigBuf, expBuf)) return null;
-  try {
-    const json = Buffer.from(payloadBase64, "base64url").toString("utf8");
-    return JSON.parse(json);
-  } catch (_err) {
-    return null;
-  }
-}
-
-function consumeSimpleChallenge(token, nowTs) {
-  const tokenHash = sha256Hex(token);
-  const existed = db.prepare("SELECT token_hash FROM simple_used_challenges WHERE token_hash=?").get(tokenHash);
-  if (existed) return false;
-  db.prepare("INSERT INTO simple_used_challenges (token_hash, used_at) VALUES (?, ?)").run(tokenHash, nowTs);
-  return true;
-}
-
-app.post("/api/simple/challenge", (req, res) => {
-  const { bid, name } = req.body || {};
-  if (!bid || !name || typeof bid !== "string" || typeof name !== "string") {
-    return res.status(400).json({ ok: false, error: "invalid input" });
-  }
-
-  const nowTs = Date.now();
-  const readyAt = nowTs + 1000 + Math.floor(Math.random() * 3000);
-  const expiresAt = readyAt + SIMPLE_CHALLENGE_TTL_MS;
-  const nonce = crypto.randomBytes(16).toString("hex");
-  const token = encodeSimpleChallenge({ bid, name, readyAt, expiresAt, nonce, v: 1 });
-  res.json({ ok: true, token, ready_at: readyAt });
-});
 
 app.post("/api/simple/submit", (req, res) => {
-  const { name, ms, falseStarts, bid, challengeToken } = req.body || {};
+  const { name, ms, falseStarts, bid } = req.body || {};
   if (!name || typeof name !== "string" || name.length < 1 || name.length > 20) {
     return res.status(400).json({ ok: false, error: "invalid name" });
   }
   if (!bid || typeof bid !== "string") {
     return res.status(400).json({ ok: false, error: "invalid bid" });
   }
-  if (!Number.isInteger(ms) || ms < SIMPLE_MIN_MS || ms > SIMPLE_MAX_MS) {
+  if (!Number.isInteger(ms) || ms < 0 || ms > SIMPLE_MAX_MS) {
     return res.status(400).json({ ok: false, error: "invalid ms" });
   }
 
   const nowTs = Date.now();
-  db.prepare("DELETE FROM simple_used_challenges WHERE used_at < ?").run(nowTs - 24 * 60 * 60 * 1000);
-
-  const challenge = decodeSimpleChallenge(challengeToken);
-  if (!challenge || challenge.v !== 1) {
-    return res.status(400).json({ ok: false, error: "invalid challenge" });
-  }
-  if (challenge.bid !== bid || challenge.name !== name) {
-    return res.status(400).json({ ok: false, error: "challenge mismatch" });
-  }
-  if (nowTs < challenge.readyAt) {
-    return res.status(400).json({ ok: false, error: "too early" });
-  }
-  if (nowTs > challenge.expiresAt) {
-    return res.status(400).json({ ok: false, error: "challenge expired" });
-  }
-  if (!consumeSimpleChallenge(challengeToken, nowTs)) {
-    return res.status(400).json({ ok: false, error: "challenge already used" });
-  }
 
   const pendingFalseStarts = bid
     ? (db.prepare("SELECT pending_count FROM simple_false_start_cycles WHERE browser_id=?").get(bid)?.pending_count || 0)
