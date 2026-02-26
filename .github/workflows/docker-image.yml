@@ -4,11 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - '**/Dockerfile'
-      - '**/docker-compose.yml'
-      - '**/docker-compose.yaml'
-      - '.github/workflows/docker-image.yml'
   workflow_dispatch:
 
 permissions:
@@ -23,37 +18,80 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.discover.outputs.matrix }}
+      changed_services: ${{ steps.discover.outputs.changed_services }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Discover services with Dockerfile
+      - name: Discover changed services with Dockerfile
         id: discover
         shell: bash
         run: |
           set -euo pipefail
-          matrix_json="$(
+
+          all_services="$(
             find . -mindepth 2 -maxdepth 2 -type f -name Dockerfile \
             | sed 's#^\./##' \
-            | sort \
-            | awk -F/ '{printf "{\"service\":\"%s\",\"context\":\"./%s\",\"dockerfile\":\"./%s\"}\n", $1, $1, $0}' \
-            | jq -s '{include: .}'
+            | cut -d/ -f1 \
+            | sort -u
           )"
 
-          if [[ "$(echo "$matrix_json" | jq '.include | length')" -eq 0 ]]; then
+          if [[ -z "$all_services" ]]; then
             echo "No Dockerfile found under first-level service directories."
             exit 1
+          fi
+
+          changed_services=""
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            changed_services="$all_services"
+          else
+            before_sha="${{ github.event.before }}"
+            current_sha="${{ github.sha }}"
+
+            if [[ -z "$before_sha" || "$before_sha" == "0000000000000000000000000000000000000000" ]]; then
+              changed_services="$all_services"
+            else
+              changed_services="$(
+                git diff --name-only "$before_sha" "$current_sha" \
+                | awk -F/ 'NF > 1 {print $1}' \
+                | sort -u \
+                | while read -r service; do
+                    if [[ -f "$service/Dockerfile" ]]; then
+                      echo "$service"
+                    fi
+                  done
+              )"
+            fi
+          fi
+
+          if [[ -z "$changed_services" ]]; then
+            echo "No service changes detected for this push."
+            matrix_json='{"include":[]}'
+          else
+            matrix_json="$({
+              while read -r service; do
+                [[ -z "$service" ]] && continue
+                printf '{"service":"%s","context":"./%s","dockerfile":"./%s/Dockerfile"}\n' "$service" "$service" "$service"
+              done <<< "$changed_services"
+            } | jq -s '{include: .}')"
           fi
 
           {
             echo 'matrix<<EOF'
             echo "$matrix_json"
             echo 'EOF'
+            echo 'changed_services<<EOF'
+            echo "$changed_services"
+            echo 'EOF'
           } >> "$GITHUB_OUTPUT"
 
   build-and-push:
     runs-on: ubuntu-latest
     needs: discover-services
+    if: ${{ fromJson(needs.discover-services.outputs.matrix).include[0] != null }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover-services.outputs.matrix) }}
