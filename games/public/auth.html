@@ -1,0 +1,102 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Login and Register</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="wrap">
+    <h1>Account Center</h1>
+    <div class="nav">
+      <a class="btn" href="/">Home</a>
+      <a class="btn" href="/leaderboard.html">Leaderboard</a>
+    </div>
+
+    <div class="row">
+      <div class="col card">
+        <h2>Register</h2>
+        <input id="regEmail" placeholder="Email">
+        <input id="regName" placeholder="Display name (2-20 chars)">
+        <input id="regPassword" type="password" placeholder="Password (at least 8 chars)">
+        <button id="registerBtn" class="primary">Send verification</button>
+        <div id="regStatus" class="status"></div>
+      </div>
+
+      <div class="col card">
+        <h2>Login</h2>
+        <input id="loginEmail" placeholder="Email">
+        <input id="loginPassword" type="password" placeholder="Password">
+        <label><input id="remember" type="checkbox" checked> Remember me (30 days)</label>
+        <button id="loginBtn" class="primary">Login</button>
+        <div id="loginStatus" class="status"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    const regStatus = document.getElementById("regStatus");
+    const loginStatus = document.getElementById("loginStatus");
+
+    async function verifyFromUrl() {
+      const token = new URLSearchParams(location.search).get("verify");
+      if (!token) return;
+      try {
+        await GAMES.api("/api/auth/verify", {
+          method: "POST",
+          body: JSON.stringify({ token })
+        });
+        GAMES.setStatus(regStatus, "Verification success, please login", true);
+        history.replaceState({}, "", "/auth.html");
+      } catch (e) {
+        GAMES.setStatus(regStatus, `Verification failed: ${e.message}`);
+      }
+    }
+
+    document.getElementById("registerBtn").addEventListener("click", async () => {
+      GAMES.setStatus(regStatus, "");
+      try {
+        const resp = await GAMES.api("/api/auth/register", {
+          method: "POST",
+          body: JSON.stringify({
+            email: document.getElementById("regEmail").value,
+            displayName: document.getElementById("regName").value,
+            password: document.getElementById("regPassword").value
+          })
+        });
+        if (resp.verify_url) {
+          GAMES.setStatus(regStatus, `SMTP not configured, temp verify link: ${resp.verify_url}`, true);
+        } else {
+          GAMES.setStatus(regStatus, "Verification email sent", true);
+        }
+      } catch (e) {
+        GAMES.setStatus(regStatus, e.message);
+      }
+    });
+
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      GAMES.setStatus(loginStatus, "");
+      try {
+        const resp = await GAMES.api("/api/auth/login", {
+          method: "POST",
+          body: JSON.stringify({
+            email: document.getElementById("loginEmail").value,
+            password: document.getElementById("loginPassword").value,
+            remember: document.getElementById("remember").checked
+          })
+        });
+        GAMES.setToken(resp.token);
+        location.href = "/";
+      } catch (e) {
+        GAMES.setStatus(loginStatus, e.message);
+      }
+    });
+
+    verifyFromUrl();
+  </script>
+
+</body>
+</html>
+

@@ -106,6 +106,7 @@ function hashPassword(password) {
 function verifyPassword(password, stored) {
   const [salt, digest] = (stored || "").split(":");
   if (!salt || !digest) return false;
+  if (!/^[0-9a-f]{128}$/i.test(digest)) return false;
   const attempt = crypto.scryptSync(password, salt, 64).toString("hex");
   return crypto.timingSafeEqual(Buffer.from(digest, "hex"), Buffer.from(attempt, "hex"));
 }

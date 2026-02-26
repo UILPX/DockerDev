@@ -1,28 +1,28 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>排行榜</title>
+  <title>Leaderboard</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <div class="wrap">
-    <h1>排行榜</h1>
+    <h1>Leaderboard</h1>
     <div class="nav">
-      <a class="btn" href="/">首页</a>
-      <a class="btn" href="/auth.html">登录/注册</a>
+      <a class="btn" href="/">Home</a>
+      <a class="btn" href="/auth.html">Login / Register</a>
     </div>
     <div class="card">
       <select id="game">
         <option value="2048">2048</option>
-        <option value="tetris">俄罗斯方块</option>
-        <option value="reaction">Reaction(越小越好)</option>
+        <option value="tetris">Tetris</option>
+        <option value="reaction">Reaction (lower is better)</option>
       </select>
-      <button id="refreshBtn" class="primary">刷新</button>
+      <button id="refreshBtn" class="primary">Refresh</button>
       <div id="status" class="status"></div>
       <table>
-        <thead><tr><th>#</th><th>玩家</th><th>成绩</th></tr></thead>
+        <thead><tr><th>#</th><th>Player</th><th>Score</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
@@ -48,11 +48,8 @@
           tr.innerHTML = `<td>${i + 1}</td><td>${row.display_name}</td><td>${fmt(game, row.value)}</td>`;
           rowsEl.appendChild(tr);
         });
-        if (r.me) {
-          GAMES.setStatus(statusEl, `你的排名: ${r.me.rank}，成绩: ${fmt(game, r.me.value)}`, true);
-        } else {
-          GAMES.setStatus(statusEl, "未登录或该游戏无个人成绩");
-        }
+        if (r.me) GAMES.setStatus(statusEl, `Your rank: ${r.me.rank}, score: ${fmt(game, r.me.value)}`, true);
+        else GAMES.setStatus(statusEl, "Not logged in or no personal score");
       } catch (e) {
         GAMES.setStatus(statusEl, e.message);
       }

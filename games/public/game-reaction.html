@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -10,13 +10,13 @@
   <div class="wrap">
     <h1>Reaction</h1>
     <div class="nav">
-      <a class="btn" href="/">首页</a>
-      <a class="btn" href="/leaderboard.html">排行榜</a>
+      <a class="btn" href="/">Home</a>
+      <a class="btn" href="/leaderboard.html">Leaderboard</a>
     </div>
     <div class="card">
-      <p>点击后等待变绿，再次点击结束。会记录你最好的毫秒。</p>
-      <div>最佳成绩: <b id="best">-</b> ms</div>
-      <div id="box" class="reaction-box">点击开始</div>
+      <p>Click to start. Wait for green, then click again.</p>
+      <div>Best: <b id="best">-</b> ms</div>
+      <div id="box" class="reaction-box">Click to start</div>
       <div id="status" class="status"></div>
     </div>
   </div>
@@ -29,13 +29,12 @@
     let state = "idle";
     let timer = null;
     let startAt = 0;
-    let best = null;
 
     function setText(t) { box.textContent = t; }
     function reset() {
       state = "idle";
       box.classList.remove("ready");
-      setText("点击开始");
+      setText("Click to start");
     }
 
     async function submit(ms) {
@@ -44,29 +43,28 @@
           method: "POST",
           body: JSON.stringify({ game: "reaction", value: ms })
         }, true);
-        best = r.best;
-        bestEl.textContent = best;
-        GAMES.setStatus(statusEl, `本次 ${ms} ms，最佳 ${best} ms`, true);
+        bestEl.textContent = r.best;
+        GAMES.setStatus(statusEl, `Run ${ms} ms, best ${r.best} ms`, true);
       } catch {
-        GAMES.setStatus(statusEl, `本次 ${ms} ms。未登录，不记排行榜`);
+        GAMES.setStatus(statusEl, `Run ${ms} ms. Not logged in.`);
       }
     }
 
     box.addEventListener("click", () => {
       if (state === "idle") {
         state = "wait";
-        setText("等待变绿...");
+        setText("Wait for green...");
         timer = setTimeout(() => {
           state = "ready";
           box.classList.add("ready");
-          setText("现在点击");
+          setText("Click now");
           startAt = performance.now();
         }, 800 + Math.random() * 1400);
         return;
       }
       if (state === "wait") {
         clearTimeout(timer);
-        GAMES.setStatus(statusEl, "抢跑了，再来一次");
+        GAMES.setStatus(statusEl, "Too early, try again.");
         reset();
         return;
       }
@@ -80,10 +78,7 @@
     (async () => {
       try {
         const r = await GAMES.api("/api/scores/leaderboard?game=reaction&limit=1", {}, true);
-        if (r.me) {
-          best = r.me.value;
-          bestEl.textContent = best;
-        }
+        if (r.me) bestEl.textContent = r.me.value;
       } catch {}
     })();
   </script>
