@@ -7,6 +7,30 @@ const app = express();
 app.use(express.json({ limit: "16kb" }));
 
 const db = new Database("/app/data/data.db");
+
+function createRateLimiter({ windowMs, maxRequests }) {
+  const buckets = new Map();
+  return (req, res, next) => {
+    const now = Date.now();
+    const ip = (req.ip || req.headers["x-forwarded-for"] || "unknown").toString();
+    const item = buckets.get(ip);
+
+    if (!item || item.resetAt <= now) {
+      buckets.set(ip, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+
+    if (item.count >= maxRequests) {
+      return res.status(429).json({ ok: false, msg: "Too many requests, please retry later." });
+    }
+
+    item.count += 1;
+    return next();
+  };
+}
+
+const apiRateLimit = createRateLimiter({ windowMs: 60 * 1000, maxRequests: 180 });
+app.use("/api/", apiRateLimit);
 db.pragma("journal_mode = WAL");
 db.pragma("synchronous = NORMAL");
 db.pragma("temp_store = MEMORY");
