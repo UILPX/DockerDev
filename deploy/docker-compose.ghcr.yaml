@@ -1,0 +1,61 @@
+name: xpsxp-stack
+
+services:
+  games:
+    image: ghcr.io/${GHCR_OWNER}/games:${IMAGE_TAG:-latest}
+    pull_policy: always
+    container_name: games
+    restart: unless-stopped
+    environment:
+      - PUBLIC_BASE_URL=${GAMES_PUBLIC_BASE_URL:-https://games.xpsxp.org}
+      - SMTP_HOST=${GAMES_SMTP_HOST:-}
+      - SMTP_PORT=${GAMES_SMTP_PORT:-587}
+      - SMTP_USER=${GAMES_SMTP_USER:-}
+      - SMTP_PASS=${GAMES_SMTP_PASS:-}
+      - SMTP_FROM=${GAMES_SMTP_FROM:-}
+    volumes:
+      - ${GAMES_DB_PATH:-./volumes/games/data.db}:/app/data/data.db
+    networks:
+      webnet:
+        aliases:
+          - games
+
+  reaction:
+    image: ghcr.io/${GHCR_OWNER}/reaction:${IMAGE_TAG:-latest}
+    pull_policy: always
+    container_name: reaction
+    restart: unless-stopped
+    volumes:
+      - ${REACTION_DB_PATH:-./volumes/reaction/data.db}:/app/data/data.db
+    networks:
+      webnet:
+        aliases:
+          - reaction
+
+  main-site:
+    image: ghcr.io/${GHCR_OWNER}/main-site:${IMAGE_TAG:-latest}
+    pull_policy: always
+    container_name: main-site
+    restart: unless-stopped
+    networks:
+      webnet:
+        aliases:
+          - main-site
+
+  nginx:
+    image: nginx:alpine
+    pull_policy: always
+    container_name: nginx
+    restart: unless-stopped
+    volumes:
+      - ../nginx/conf.d:/etc/nginx/conf.d:ro
+    expose:
+      - "80"
+    networks:
+      webnet:
+        aliases:
+          - nginx
+
+networks:
+  webnet:
+    external: true
