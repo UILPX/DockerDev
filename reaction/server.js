@@ -7,6 +7,27 @@ app.use(express.json());
 
 const db = new Database("/app/data/data.db");
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS identities (
+    browser_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS simple_scores (
+    name TEXT PRIMARY KEY,
+    best_ms INTEGER NOT NULL,
+    false_starts INTEGER NOT NULL DEFAULT 0,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS pro_scores (
+    name TEXT PRIMARY KEY,
+    best_ms INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+`);
+
 // ==========================
 // AIM MODE
 // ==========================
@@ -95,6 +116,7 @@ db.exec(`
   )
 `);
 
+
 // ==========================
 // Identity
 // ==========================
@@ -137,21 +159,29 @@ app.post("/api/claim", (req, res) => {
 // SIMPLE MODE
 // ==========================
 
+const SIMPLE_MIN_MS = 60;
+const SIMPLE_MAX_MS = 5000;
+
 app.post("/api/simple/submit", (req, res) => {
-  const { name, ms, falseStarts, bid } = req.body;
-  const now = Date.now();
+  const { name, ms, falseStarts, bid } = req.body || {};
+  if (!name || typeof name !== "string" || name.length < 1 || name.length > 20) {
+    return res.status(400).json({ ok: false, error: "invalid name" });
+  }
+  if (!Number.isInteger(ms) || ms < SIMPLE_MIN_MS || ms > SIMPLE_MAX_MS) {
+    return res.status(400).json({ ok: false, error: "invalid ms" });
+  }
+
+  const nowTs = Date.now();
   const pendingFalseStarts = bid
     ? (db.prepare("SELECT pending_count FROM simple_false_start_cycles WHERE browser_id=?").get(bid)?.pending_count || 0)
     : (falseStarts || 0);
 
-  const row = db.prepare(
-    "SELECT best_ms FROM simple_scores WHERE name=?"
-  ).get(name);
+  const row = db.prepare("SELECT best_ms FROM simple_scores WHERE name=?").get(name);
 
   if (!row) {
     db.prepare(
       "INSERT INTO simple_scores (name, best_ms, false_starts, updated_at) VALUES (?, ?, ?, ?)"
-    ).run(name, ms, pendingFalseStarts, now);
+    ).run(name, ms, pendingFalseStarts, nowTs);
     if (bid) {
       db.prepare(`
         INSERT INTO simple_false_start_cycles (browser_id, name, pending_count, updated_at)
@@ -160,7 +190,7 @@ app.post("/api/simple/submit", (req, res) => {
           pending_count = 0,
           name = excluded.name,
           updated_at = excluded.updated_at
-      `).run(bid, name, now);
+      `).run(bid, name, nowTs);
     }
     return res.json({
       ok: true,
@@ -174,7 +204,7 @@ app.post("/api/simple/submit", (req, res) => {
   if (ms < row.best_ms) {
     db.prepare(
       "UPDATE simple_scores SET best_ms=?, false_starts=?, updated_at=? WHERE name=?"
-    ).run(ms, pendingFalseStarts, now, name);
+    ).run(ms, pendingFalseStarts, nowTs, name);
     if (bid) {
       db.prepare(`
         INSERT INTO simple_false_start_cycles (browser_id, name, pending_count, updated_at)
@@ -183,7 +213,7 @@ app.post("/api/simple/submit", (req, res) => {
           pending_count = 0,
           name = excluded.name,
           updated_at = excluded.updated_at
-      `).run(bid, name, now);
+      `).run(bid, name, nowTs);
     }
     return res.json({
       ok: true,
@@ -296,6 +326,27 @@ app.get("/api/pro/leaderboard/all", (req, res) => {
   ).all();
   res.json({ ok: true, rows });
 });
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS identities (
+    browser_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS simple_scores (
+    name TEXT PRIMARY KEY,
+    best_ms INTEGER NOT NULL,
+    false_starts INTEGER NOT NULL DEFAULT 0,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS pro_scores (
+    name TEXT PRIMARY KEY,
+    best_ms INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+`);
 
 // ==========================
 // AIM MODE
