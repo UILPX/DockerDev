@@ -122,6 +122,7 @@ jobs:
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=,format=long
+            type=raw,value=run-${{ github.run_number }}
 
       - name: Build and push ${{ matrix.service }}
         uses: docker/build-push-action@v6
