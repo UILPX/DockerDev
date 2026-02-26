@@ -3,8 +3,7 @@ services:
     build: .
     container_name: main-site
     restart: unless-stopped
-    volumes:
-      - ./public:/app/public
+    # main-site 无本地数据库，不需要挂载 public 目录
     networks:
       webnet:
         aliases:
