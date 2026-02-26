@@ -341,7 +341,7 @@ function applySizeGate(){
     if (timeout) { clearTimeout(timeout); timeout=null; }
     state="size-locked";
     dot.style.opacity=0;
-    setScreen("#0f172a", sizeBlockedText);
+    setScreen("#3b82f6", sizeBlockedText);
     sub.textContent = "";
     result.textContent = "";
     message.style.display = "";
@@ -406,7 +406,7 @@ function startRun(){
   setScreen("#dc2626", T[lang].waiting);
   timeout = setTimeout(()=>{
     state="aiming";
-    setScreen("#1d4ed8", T[lang].go);
+    setScreen("#22c55e", T[lang].go);
     placeDot();
     sub.textContent = T[lang].progress(current, TARGETS, misses);
   }, Math.random()*800 + 500);
@@ -460,18 +460,9 @@ async function submitResult(avg, miss, score){
   }
 }
 
-let lastActionAt=0;
-let handlingAction=false;
-const ACTION_DEBOUNCE_MS = 200;
 function handleAction(evt){
   if (blocked || sizeBlocked) return;
-  if (handlingAction) return;
-  handlingAction=true;
-  setTimeout(()=>{ handlingAction=false; }, 50);
   if (evt && typeof evt.detail === "number" && evt.detail > 1) return;
-  const now = Date.now();
-  if (now - lastActionAt < ACTION_DEBOUNCE_MS) return;
-  lastActionAt = now;
   if (evt.target && evt.target.closest && evt.target.closest("a")) return;
 
   if (state === "idle") {
@@ -514,12 +505,13 @@ function handleAction(evt){
 
 if (blocked) {
   screen.classList.add("blocked");
-  setScreen("#0f172a", T[lang].blocked);
+  setScreen("#3b82f6", T[lang].blocked);
   sub.textContent = "";
 } else if (window.PointerEvent) {
   screen.addEventListener("pointerdown", handleAction, { passive: true });
 } else {
   screen.addEventListener("mousedown", handleAction);
+  screen.addEventListener("touchstart", handleAction, { passive: true });
 }
 if (!blocked) {
   applySizeGate();

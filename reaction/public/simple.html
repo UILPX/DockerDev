@@ -268,7 +268,7 @@ async function recordFalseStart(){
 // ==========================
 // Simple Logic
 // ==========================
-let state="idle";
+let state="booting";
 let startTime=null;
 let readyTimeout=null;
 let falseStarts=0;
@@ -323,6 +323,7 @@ function getEventTimestamp(evt){
 }
 
 async function handleAction(evt){
+  if (state === "booting") return;
   if (evt && typeof evt.detail === "number" && evt.detail > 1) return;
   if (evt.target && evt.target.closest && evt.target.closest("a")) return;
 
@@ -448,6 +449,7 @@ async function loadLeaderboard(){
   myRankDiv.textContent = j.me && j.me.rank ? T[lang].rankLine(j.me.rank) : "";
 }
 
+state = "booting";
 setScreen("#3b82f6", T[lang].loading);
 checkIdentity();
 
