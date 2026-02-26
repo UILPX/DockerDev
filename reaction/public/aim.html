@@ -407,7 +407,7 @@ function startRun(){
   setScreen("#dc2626", T[lang].waiting);
   timeout = setTimeout(()=>{
     state="aiming";
-    setScreen("#22c55e", T[lang].go);
+    setScreen("#3b82f6", T[lang].go);
     placeDot();
     sub.textContent = T[lang].progress(current, TARGETS, misses);
   }, Math.random()*800 + 500);
