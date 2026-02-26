@@ -5,12 +5,12 @@ services:
     container_name: games
     restart: unless-stopped
     environment:
-      - PUBLIC_BASE_URL=https://games.xpsxp.org
-      - SMTP_HOST=
-      - SMTP_PORT=587
-      - SMTP_USER=
-      - SMTP_PASS=
-      - SMTP_FROM=
+      - PUBLIC_BASE_URL=${GAMES_PUBLIC_BASE_URL:-https://games.xpsxp.org}
+      - SMTP_HOST=${GAMES_SMTP_HOST:-}
+      - SMTP_PORT=${GAMES_SMTP_PORT:-587}
+      - SMTP_USER=${GAMES_SMTP_USER:-}
+      - SMTP_PASS=${GAMES_SMTP_PASS:-}
+      - SMTP_FROM=${GAMES_SMTP_FROM:-}
     volumes:
       - ./data/data.db:/app/data/data.db
     networks:
