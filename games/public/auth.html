@@ -87,7 +87,7 @@
             remember: document.getElementById("remember").checked
           })
         });
-        GAMES.setToken(resp.token);
+        GAMES.setToken(resp.token, document.getElementById("remember").checked);
         location.href = "/";
       } catch (e) {
         GAMES.setStatus(loginStatus, e.message);

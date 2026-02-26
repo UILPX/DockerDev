@@ -1,15 +1,27 @@
 const TOKEN_KEY = "games_token";
+const TOKEN_STORAGE_KEY = "games_token_storage";
 
 function getToken() {
-  return localStorage.getItem(TOKEN_KEY) || "";
+  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "";
 }
 
-function setToken(token) {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
+function setToken(token, remember = true) {
+  if (!token) return;
+  if (remember) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(TOKEN_STORAGE_KEY, "local");
+    sessionStorage.removeItem(TOKEN_KEY);
+  } else {
+    sessionStorage.setItem(TOKEN_KEY, token);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.setItem(TOKEN_STORAGE_KEY, "session");
+  }
 }
 
 function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
 async function api(path, options = {}, auth = false) {
