@@ -1,11 +1,11 @@
 services:
   reaction:
-    build: .
+    image: ghcr.io/${GHCR_OWNER}/reaction:${IMAGE_TAG:-latest}
+    pull_policy: always
     container_name: reaction
     restart: unless-stopped
     volumes:
-      # 仅持久化数据库文件；前端静态资源使用镜像内置文件
-      - ./data/data.db:/app/data/data.db
+      - ${REACTION_DB_PATH:-./data/data.db}:/app/data/data.db
     networks:
       webnet:
         aliases:

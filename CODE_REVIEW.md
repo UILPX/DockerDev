@@ -158,3 +158,30 @@
 ---
 
 如果你愿意，我可以下一步直接给出一版“最小风险改造 PR”（先做索引 + 重复 SQL 清理 + JSON limit），改动小、收益大，也便于你快速上线验证。
+
+## Deployment bundle for UGREEN Docker GUI
+
+Added `deploy/docker-compose.ghcr.yaml` so a NAS GUI can import **one compose source** and pull all three service images (`games`, `reaction`, `main-site`) from GHCR in one shot.
+
+Usage:
+- Copy `deploy/.env.example` to `deploy/.env` and fill `GHCR_OWNER`.
+- Create database files referenced by `GAMES_DB_PATH` and `REACTION_DB_PATH` before first run.
+- Import `deploy/docker-compose.ghcr.yaml` in your Docker GUI (or run with `docker compose --env-file deploy/.env -f deploy/docker-compose.ghcr.yaml up -d`).
+
+## Production-ready compose rewrite
+
+All service compose files now use GHCR images directly with `pull_policy: always` and are attached to the external `webnet` network.
+
+For one-shot NAS/server updates, run:
+
+```bash
+cd deploy
+cp .env.example .env
+./scripts/update-prod.sh
+```
+
+The update script will:
+- Pull latest images from GHCR
+- Recreate containers with current tags
+- Prune old/dangling images to reclaim space
+- Ensure SQLite DB files exist at mapped host paths
