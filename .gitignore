@@ -1,4 +1,4 @@
 
 # Exclude zerotier entirely
 zerotier/
-reaction/data
+reaction/data/*
