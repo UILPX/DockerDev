@@ -7,11 +7,7 @@ services:
     container_name: gallery-test
     restart: unless-stopped
     ports:
-      - "${GALLERY_PORT:-3000}:3000"
-    environment:
-      - GALLERY_ROOT=/app/data/gallery
-      - SCAN_INTERVAL_MS=${GALLERY_SCAN_INTERVAL_MS:-60000}
-      - COMMENTS_FILE=/app/data/state/comments.json
+      - "3000:3000"
     volumes:
-      - ${GALLERY_LIBRARY_PATH:-./data/library}:/app/data/gallery:ro
-      - ${GALLERY_STATE_PATH:-./data/state}:/app/data/state
+      - ./data/library:/app/data/gallery:ro
+      - ./data/state:/app/data/state

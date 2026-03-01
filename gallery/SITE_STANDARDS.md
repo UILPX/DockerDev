@@ -105,8 +105,20 @@ Future moderation requirements:
 - `gallery` service must mount:
   - read-only media root to `/app/data/gallery`
   - writable state root to `/app/data/state`
-- Local and production compose files must use equivalent env var semantics.
+- Do not use path-related environment variables in compose files.
+- Host paths must follow NAS convention: `/volume1/docker/<project-name>/...`.
+- For this project:
+  - `/volume1/docker/gallery/db` -> `/app/data/gallery:ro`
+  - `/volume1/docker/gallery/state` -> `/app/data/state`
 - Deployment scripts must create required state directories before compose up.
+
+### 7.1 New Project Path Checklist
+
+For every new project, provide an explicit path plan before implementation:
+- List all required host paths under `/volume1/docker/<project-name>/...`.
+- Explain each path purpose (read-only media, writable state, config, database, logs).
+- Mark which paths must exist before first deploy.
+- Operator creates paths manually on NAS before deployment.
 
 ## 8. Testing & Change Checklist
 

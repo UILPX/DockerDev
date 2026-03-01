@@ -47,12 +47,9 @@ services:
     pull_policy: always
     container_name: gallery
     restart: unless-stopped
-    environment:
-      - SCAN_INTERVAL_MS=120000
-      - COMMENTS_FILE=/app/data/state/comments.json
     volumes:
-      - ./volumes/gallery/library:/app/data/gallery:ro
-      - ./volumes/gallery/state:/app/data/state
+      - /volume1/docker/gallery/db:/app/data/gallery:ro
+      - /volume1/docker/gallery/state:/app/data/state
     networks:
       webnet:
         aliases:

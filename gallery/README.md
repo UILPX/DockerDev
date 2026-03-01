@@ -49,9 +49,25 @@ Planned upgrades are grouped by phase to keep development controlled.
 ## Current Upload Flow
 
 - Public uploads are collected by UGREEN Collection.
-- Files are organized under `/docker/gallery/db/<username>/`.
-- Deploy mapping should mount that directory to container `GALLERY_ROOT` (`/app/data/gallery`).
+- Files are organized under `/volume1/docker/gallery/db/<username>/`.
+- Deploy mapping mounts `/volume1/docker/gallery/db` to `/app/data/gallery` (read-only).
 - Self-service edit/delete after upload is currently not supported.
+
+## NAS Path Plan (Manual Create)
+
+No path-related environment variables are used in this project.
+
+Create these paths manually on NAS before deploy:
+
+1. `/volume1/docker/gallery/db`
+Purpose:
+- media root, one folder per user (`<username>/...`)
+- mounted to container `/app/data/gallery` as read-only
+
+2. `/volume1/docker/gallery/state`
+Purpose:
+- runtime writable state (comments file)
+- mounted to container `/app/data/state`
 
 ### Phase 2 (Stability + Moderation)
 - Comment moderation tools (hide/delete/lock by admin).
@@ -105,7 +121,7 @@ This document defines:
 
 ```bash
 cd /Users/xp/Code/DockerDev/gallery
-docker compose --env-file .env.local -f docker-compose.local.yaml up -d --build
+docker compose -f docker-compose.local.yaml up -d --build
 ```
 
 Then open `http://localhost:3000`.
@@ -116,14 +132,13 @@ Use the local compose file to build native image on Apple Silicon:
 
 ```bash
 cd /Users/xp/Code/DockerDev/gallery
-cp .env.local.example .env.local
-docker compose --env-file .env.local -f docker-compose.local.yaml up -d --build
+docker compose -f docker-compose.local.yaml up -d --build
 ```
 
 Stop:
 
 ```bash
-docker compose --env-file .env.local -f docker-compose.local.yaml down
+docker compose -f docker-compose.local.yaml down
 ```
 
 ## Pre-Deploy Checklist
@@ -142,12 +157,12 @@ docker compose --env-file .env.local -f docker-compose.local.yaml down
 
 4. Health-check inside running container:
 ```bash
-docker compose --env-file .env.local -f docker-compose.local.yaml exec -T gallery \
+docker compose -f docker-compose.local.yaml exec -T gallery \
   sh -lc 'wget -qO- http://127.0.0.1:3000/api/health'
 ```
 
-## Environment
+## Runtime Defaults
 
-- `GALLERY_ROOT` default `/app/data/gallery`
-- `SCAN_INTERVAL_MS` default `120000`
-- `COMMENTS_FILE` default `/app/data/state/comments.json`
+- container media root: `/app/data/gallery`
+- container state root: `/app/data/state`
+- comment file: `/app/data/state/comments.json`

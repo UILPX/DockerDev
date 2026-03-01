@@ -47,8 +47,8 @@ gallery-root/
 
 Current production upload workflow:
 当前线上上传流程：
-- UGREEN Collection writes files into `/docker/gallery/db/<username>/`.
-  绿联云收集会将文件写入 `/docker/gallery/db/<username>/`。
+- UGREEN Collection writes files into `/volume1/docker/gallery/db/<username>/`.
+  绿联云收集会将文件写入 `/volume1/docker/gallery/db/<username>/`。
 - Deploy should mount that path to `/app/data/gallery` in container.
   部署时应将该路径挂载到容器内 `/app/data/gallery`。
 - Users should finish editing before upload. Post-upload self-service edit/delete is not supported.
