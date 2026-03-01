@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="$ROOT_DIR/docker-compose.ghcr.yaml"
 
-mkdir -p "$ROOT_DIR/volumes/games" "$ROOT_DIR/volumes/reaction"
+mkdir -p "$ROOT_DIR/volumes/games" "$ROOT_DIR/volumes/reaction" "$ROOT_DIR/volumes/gallery/library" "$ROOT_DIR/volumes/gallery/state"
 touch "$ROOT_DIR/volumes/games/data.db" "$ROOT_DIR/volumes/reaction/data.db"
 
 # Pull latest image tags and recreate containers

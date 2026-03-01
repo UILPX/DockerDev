@@ -1,0 +1,14 @@
+# EN: Put the caption text for ONE photo in this file.
+# 中文：这个文件里填写“一张照片”的说明文字。
+#
+# EN: Filename must match the photo filename (except extension).
+# 中文：文件名必须和照片同名（只改后缀为 .txt）。
+#
+# EN Example:
+#   1.jpg      -> 1.txt
+#   sunset.png -> sunset.txt
+# 中文示例：
+#   1.jpg      -> 1.txt
+#   sunset.png -> sunset.txt
+
+Sunset at the old bridge, taken in Chicago, 2026.

@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gallery Guide</title>
+  <style>
+    :root{
+      --bg-0:#020918;
+      --bg-1:#05224f;
+      --bg-2:#0a3b78;
+      --panel:#0b1f42;
+      --panel-border:rgba(160,191,237,.24);
+      --text:#eef5ff;
+      --muted:#a8bfdd;
+      --ok:#7fe2ab;
+      --warn:#ffd07d;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:
+        radial-gradient(60rem 36rem at 12% -10%, rgba(66,144,240,.34) 0%, transparent 62%),
+        radial-gradient(46rem 34rem at 95% 0%, rgba(45,106,196,.28) 0%, transparent 58%),
+        linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 36%, var(--bg-0) 100%);
+      min-height:100vh;
+      padding:24px 16px 44px;
+    }
+    .shell{ width:min(980px,100%); margin:0 auto; }
+    .top{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+    h1{ margin:0; font-size:clamp(28px,3.2vw,38px); }
+    .sub{ margin-top:6px; color:var(--muted); font-size:14px; }
+    .btn{ display:inline-flex; align-items:center; justify-content:center; border:1px solid rgba(146,191,245,.42); border-radius:10px; background:rgba(10,36,76,.68); color:var(--text); padding:8px 12px; text-decoration:none; font-size:13px; }
+    .btn:hover{ border-color:rgba(123,198,255,.9); background:rgba(15,49,97,.75); }
+    .card{ background:linear-gradient(180deg, rgba(8,30,66,.9) 0%, rgba(5,18,43,.9) 100%); border:1px solid var(--panel-border); border-radius:16px; padding:14px 16px; margin-top:12px; }
+    h2{ margin:0 0 8px; font-size:20px; }
+    p, li{ color:#d4e6ff; line-height:1.55; font-size:14px; }
+    ul{ margin:8px 0; padding-left:20px; }
+    .code{ background:rgba(3,14,33,.82); border:1px solid rgba(146,191,245,.24); border-radius:10px; padding:12px; overflow:auto; font-size:13px; line-height:1.55; color:#e4f0ff; white-space:pre; }
+    .hint-ok{ color:var(--ok); font-weight:600; }
+    .hint-warn{ color:var(--warn); font-weight:600; }
+    .files{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; margin-top:8px; }
+    .file-link{ display:flex; flex-direction:column; gap:4px; padding:10px; border-radius:10px; border:1px solid rgba(146,191,245,.24); background:rgba(7,24,52,.68); color:var(--text); text-decoration:none; }
+    .file-link small{ color:var(--muted); font-size:12px; }
+    .upload-box{
+      margin-top:10px;
+      padding:12px;
+      border:1px solid rgba(146,191,245,.24);
+      border-radius:12px;
+      background:rgba(7,24,52,.5);
+    }
+    .upload-box .btn{ margin-top:8px; }
+    .qr-wrap{ margin-top:10px; }
+    .qr-img{
+      width:min(240px, 62vw);
+      height:auto;
+      border-radius:10px;
+      border:1px solid rgba(146,191,245,.3);
+      background:rgba(255,255,255,.95);
+      padding:6px;
+      display:block;
+    }
+    .upload-link{
+      margin-top:8px;
+      font-size:12px;
+      color:var(--muted);
+      word-break:break-all;
+    }
+    .lang-block{ display:none; }
+    .lang-block.active{ display:block; }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section id="zh" class="lang-block">
+      <header class="top">
+        <div>
+          <h1>上传与文件格式教程</h1>
+          <div class="sub">给没有命令行权限的用户：通过绿联云收集上传即可。</div>
+        </div>
+        <a class="btn" href="/">返回首页</a>
+      </header>
+
+      <section class="card">
+        <h2>1) 上传方式（绿联云收集）</h2>
+        <p>你不需要关心上传到哪。请直接通过绿联云收集功能上传文件，并填写你的用户名。</p>
+        <ul>
+          <li>系统会把文件自动放到：<code>/docker/gallery/db/用户名/</code></li>
+          <li>网站会按“用户名文件夹”自动识别为一个摄影师</li>
+          <li>用户名建议固定一致，避免生成多个账号目录</li>
+        </ul>
+        <div class="upload-box">
+          <strong>上传入口</strong>
+          <div>
+            <a class="btn" href="http://ug.link/xpn/filemgr/collect-invite/?id=3df99852e9a24b0289076b99417ae81b" target="_blank" rel="noopener noreferrer">打开上传链接</a>
+          </div>
+          <div class="qr-wrap">
+            <img class="qr-img" src="/QRcode.png" alt="上传二维码">
+          </div>
+          <div class="upload-link">http://ug.link/xpn/filemgr/collect-invite/?id=3df99852e9a24b0289076b99417ae81b</div>
+        </div>
+        <p class="hint-ok">你只需要上传文件并填写正确用户名，网站会自动更新展示。</p>
+      </section>
+
+      <section class="card">
+        <h2>2) 删除规则</h2>
+        <p>当前不支持用户自行删除或修改已上传文件。请先修改完再上传；如需删除或替换，请联系管理员：<a href="mailto:xpliu@xpsxp.org">xpliu@xpsxp.org</a></p>
+      </section>
+
+      <section class="card">
+        <h2>3) 文件类型怎么写</h2>
+        <ul>
+          <li><strong>支持上传图片格式</strong>：<code>.jpg .jpeg .png .webp .gif .bmp .avif .heic .heif</code></li>
+          <li><strong>当前不支持视频</strong>：如 <code>.mp4 .mov .mkv</code> 不会在网站展示。</li>
+          <li><strong>支持上传说明文本</strong>：<code>.txt</code>（与图片同名）。</li>
+          <li>图片说明：与图片同名的 <code>.txt</code>，例如 <code>1.jpg</code> 对应 <code>1.txt</code>。</li>
+          <li><strong>命名支持中文</strong>：如 <code>海边日落.jpg</code> 可以正常展示。</li>
+          <li><strong>命名限制</strong>：文件名不要包含 <code>/</code>、<code>\</code>，并避免前后空格。</li>
+        </ul>
+        <p class="hint-warn">说明文件必须和图片同名，否则不会显示在图片旁边。</p>
+      </section>
+
+      <section class="card">
+        <h2>4) 模板下载（直接上传后改内容）</h2>
+        <p>先下载模板并在本地修改完成，再上传。上传后暂不支持直接修改。</p>
+        <ul>
+          <li><code>profile.json</code>：填写展示名、简介、头像文件名和排序。</li>
+          <li><code>bio.txt</code>：个人简介文本（当 <code>profile.json</code> 里没写 bio 时使用）。</li>
+          <li><code>photo-caption.txt</code>：图片说明模板，改成和图片同名后使用。</li>
+          <li><code>folder-structure.txt</code>：目录结构示例，方便核对上传组织。</li>
+          <li><code>*.annotated.*</code>：带中英注释教学版，只用于参考，不直接上传使用。</li>
+        </ul>
+        <div class="files">
+          <a class="file-link" href="/templates/profile.json" download>
+            profile.json
+            <small>纯净模板：可直接使用</small>
+          </a>
+          <a class="file-link" href="/templates/bio.txt" download>
+            bio.txt
+            <small>纯净模板：可直接使用（可选）</small>
+          </a>
+          <a class="file-link" href="/templates/photo-caption.txt" download>
+            photo-caption.txt
+            <small>纯净模板：改成同名 .txt 使用</small>
+          </a>
+          <a class="file-link" href="/templates/folder-structure.txt" download>
+            folder-structure.txt
+            <small>目录结构示例</small>
+          </a>
+        </div>
+        <p class="hint-ok">如果你想看“每行解释”，请下载下面的带注释模板。</p>
+        <div class="files">
+          <a class="file-link" href="/templates/profile.annotated.jsonc" download>
+            profile.annotated.jsonc
+            <small>带中英注释：逐行解释每个字段</small>
+          </a>
+          <a class="file-link" href="/templates/bio.annotated.txt" download>
+            bio.annotated.txt
+            <small>带中英注释：逐行填写说明</small>
+          </a>
+          <a class="file-link" href="/templates/photo-caption.annotated.txt" download>
+            photo-caption.annotated.txt
+            <small>带中英注释：同名规则解释</small>
+          </a>
+        </div>
+        <p class="hint-warn">注意：<code>profile.annotated.jsonc</code> 含注释，不能直接当 <code>profile.json</code> 使用。请按注释内容填写到纯净版 <code>profile.json</code>。</p>
+      </section>
+
+      <section class="card">
+        <h2>5) 更新什么时候生效</h2>
+        <ul>
+          <li>网站每隔一段时间自动扫描新文件（管理员当前配置的扫描间隔）。</li>
+          <li>你也可以在主页点击 <code>Refresh</code> 立即刷新显示。</li>
+          <li>如果刚上传没看到，通常等 1 分钟内会出现。</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>6) 访客留言讨论怎么用</h2>
+        <ul>
+          <li>主页和摄影师子页都支持对“当前照片”留言。</li>
+          <li>可以填写名字，或勾选“匿名”后直接留言。</li>
+          <li>主页留言时，轮播会暂停；发送成功后自动切到下一位摄影师。</li>
+          <li>摄影师子页留言会显示在该照片的讨论区，所有访客可见。</li>
+        </ul>
+      </section>
+    </section>
+
+    <section id="en" class="lang-block">
+      <header class="top">
+        <div>
+          <h1>Upload & File Format Guide</h1>
+          <div class="sub">For users without command-line access: upload through UGREEN Collection.</div>
+        </div>
+        <a class="btn" href="/">Back To Home</a>
+      </header>
+
+      <section class="card">
+        <h2>1) Upload flow (UGREEN Collection)</h2>
+        <p>You do not need to choose upload path manually. Just upload through UGREEN Collection and fill in your username.</p>
+        <ul>
+          <li>Files are automatically saved to: <code>/docker/gallery/db/&lt;username&gt;/</code></li>
+          <li>Website detects each username folder as one photographer</li>
+          <li>Use a consistent username to avoid creating multiple folders</li>
+        </ul>
+        <div class="upload-box">
+          <strong>Upload entry</strong>
+          <div>
+            <a class="btn" href="http://ug.link/xpn/filemgr/collect-invite/?id=3df99852e9a24b0289076b99417ae81b" target="_blank" rel="noopener noreferrer">Open upload link</a>
+          </div>
+          <div class="qr-wrap">
+            <img class="qr-img" src="/QRcode.png" alt="Upload QR code">
+          </div>
+          <div class="upload-link">http://ug.link/xpn/filemgr/collect-invite/?id=3df99852e9a24b0289076b99417ae81b</div>
+        </div>
+        <p class="hint-ok">Only upload files and keep your username correct; the gallery will update automatically.</p>
+      </section>
+
+      <section class="card">
+        <h2>2) Deletion policy</h2>
+        <p>Self-service delete or edit after upload is not supported currently. Please finish editing before upload. For removal or replacement, contact admin: <a href="mailto:xpliu@xpsxp.org">xpliu@xpsxp.org</a></p>
+      </section>
+
+      <section class="card">
+        <h2>3) File types and rules</h2>
+        <ul>
+          <li><strong>Supported image formats</strong>: <code>.jpg .jpeg .png .webp .gif .bmp .avif .heic .heif</code></li>
+          <li><strong>Video is not supported now</strong>: files like <code>.mp4 .mov .mkv</code> are not shown in gallery.</li>
+          <li><strong>Supported caption text</strong>: <code>.txt</code> (same filename as photo).</li>
+          <li>Photo caption: same filename with <code>.txt</code>, for example <code>1.jpg</code> + <code>1.txt</code>.</li>
+          <li><strong>Chinese filenames are supported</strong>: for example <code>sunset-海边.jpg</code>.</li>
+          <li><strong>Naming limits</strong>: do not use <code>/</code> or <code>\</code> in filenames; avoid leading/trailing spaces.</li>
+        </ul>
+        <p class="hint-warn">Caption file must share the exact same filename as the photo.</p>
+      </section>
+
+      <section class="card">
+        <h2>4) Download templates</h2>
+        <p>Download a template, finish editing locally, then upload. Direct edit after upload is not supported now.</p>
+        <ul>
+          <li><code>profile.json</code>: define display name, bio, avatar filename, and order.</li>
+          <li><code>bio.txt</code>: plain text bio (used when <code>profile.json</code> has no bio).</li>
+          <li><code>photo-caption.txt</code>: caption template, rename to match each photo filename.</li>
+          <li><code>folder-structure.txt</code>: folder layout example for upload checking.</li>
+          <li><code>*.annotated.*</code>: bilingual annotated teaching files, for reference only.</li>
+        </ul>
+        <div class="files">
+          <a class="file-link" href="/templates/profile.json" download>
+            profile.json
+            <small>Clean template: ready to use</small>
+          </a>
+          <a class="file-link" href="/templates/bio.txt" download>
+            bio.txt
+            <small>Clean template: ready to use (optional)</small>
+          </a>
+          <a class="file-link" href="/templates/photo-caption.txt" download>
+            photo-caption.txt
+            <small>Clean template: rename to same filename</small>
+          </a>
+          <a class="file-link" href="/templates/folder-structure.txt" download>
+            folder-structure.txt
+            <small>Folder layout example</small>
+          </a>
+        </div>
+        <p class="hint-ok">Need line-by-line explanation? Download annotated templates below.</p>
+        <div class="files">
+          <a class="file-link" href="/templates/profile.annotated.jsonc" download>
+            profile.annotated.jsonc
+            <small>Bilingual comments for every field</small>
+          </a>
+          <a class="file-link" href="/templates/bio.annotated.txt" download>
+            bio.annotated.txt
+            <small>Bilingual writing guidance</small>
+          </a>
+          <a class="file-link" href="/templates/photo-caption.annotated.txt" download>
+            photo-caption.annotated.txt
+            <small>Bilingual filename rule guidance</small>
+          </a>
+        </div>
+        <p class="hint-warn">Important: <code>profile.annotated.jsonc</code> contains comments and is not valid as <code>profile.json</code>. Copy values into clean <code>profile.json</code>.</p>
+      </section>
+
+      <section class="card">
+        <h2>5) When updates appear</h2>
+        <ul>
+          <li>The site scans for new files periodically (configured by admin).</li>
+          <li>You can also click <code>Refresh</code> on the homepage for instant update.</li>
+          <li>If files don't appear immediately, they usually show within about 1 minute.</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>6) Visitor discussion panel</h2>
+        <ul>
+          <li>Both homepage and photographer pages support comments for the current photo.</li>
+          <li>Visitors can type a name, or enable anonymous mode before posting.</li>
+          <li>On homepage, slideshow pauses while typing and moves to next photographer after successful post.</li>
+          <li>Comments are visible to all visitors in that photo discussion panel.</li>
+        </ul>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const lang = (navigator.language || "en").toLowerCase().startsWith("zh") ? "zh" : "en";
+    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+    document.title = lang === "zh" ? "Gallery 使用教程" : "Gallery Guide";
+    document.getElementById(lang).classList.add("active");
+  </script>
+</body>
+</html>

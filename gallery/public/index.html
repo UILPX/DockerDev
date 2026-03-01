@@ -1,0 +1,1570 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Friends Gallery</title>
+  <style>
+    :root{
+      --bg-0:#020918;
+      --bg-1:#05224f;
+      --bg-2:#0a3b78;
+      --panel:#0b1f42;
+      --panel-strong:#081936;
+      --panel-border:rgba(160,191,237,.24);
+      --text:#eef5ff;
+      --muted:#a8bfdd;
+      --accent:#7bc6ff;
+      --shadow:0 12px 30px rgba(1,10,30,.35);
+      --danger:#ffccd4;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:
+        radial-gradient(60rem 36rem at 12% -10%, rgba(66,144,240,.34) 0%, transparent 62%),
+        radial-gradient(46rem 34rem at 95% 0%, rgba(45,106,196,.28) 0%, transparent 58%),
+        linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 36%, var(--bg-0) 100%);
+      padding:16px;
+    }
+
+    .app{ width:min(1240px,100%); margin:0 auto; }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+      padding:8px 2px;
+    }
+    .title-wrap h1{ margin:0; font-size:clamp(18px,2.4vw,26px); letter-spacing:.02em; }
+    .top-actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .status{ color:var(--muted); font-size:11px; opacity:.7; }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid rgba(146,191,245,.3);
+      border-radius:10px;
+      background:rgba(10,36,76,.45);
+      color:var(--text);
+      padding:7px 10px;
+      font-size:12px;
+      cursor:pointer;
+      text-decoration:none;
+      transition:border-color .16s ease, background-color .16s ease;
+    }
+    .btn:hover{ border-color:rgba(123,198,255,.9); background:rgba(15,49,97,.75); }
+    .btn.active{ border-color:rgba(123,198,255,.95); background:rgba(14,53,107,.9); }
+    .btn:disabled{ opacity:.45; cursor:not-allowed; }
+
+    .drawer{
+      position:fixed;
+      top:0;
+      right:-320px;
+      width:min(320px,86vw);
+      height:100vh;
+      background:linear-gradient(180deg, rgba(5,20,44,.98) 0%, rgba(3,11,27,.98) 100%);
+      border-left:1px solid var(--panel-border);
+      box-shadow:-18px 0 40px rgba(0,0,0,.4);
+      z-index:60;
+      transition:right .22s ease;
+      display:flex;
+      flex-direction:column;
+    }
+    .drawer.open{ right:0; }
+    .drawer-head{ display:flex; align-items:center; justify-content:space-between; padding:14px; border-bottom:1px solid rgba(149,190,239,.2); }
+    .drawer-body{ padding:12px; overflow:auto; }
+    .people{ display:grid; gap:8px; }
+    .person-item{
+      border:1px solid rgba(146,191,245,.26);
+      border-radius:10px;
+      background:rgba(8,27,59,.7);
+      padding:10px;
+      cursor:pointer;
+    }
+    .person-item.active{ border-color:rgba(123,198,255,.9); background:rgba(14,49,97,.88); }
+    .person-name{ margin:0; font-size:15px; }
+    .person-meta{ margin:4px 0 0; color:var(--muted); font-size:12px; }
+
+    .mask{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.36);
+      z-index:50;
+      display:none;
+    }
+    .mask.show{ display:block; }
+
+    .panel{
+      border:1px solid rgba(160,191,237,.18);
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(8,30,66,.72) 0%, rgba(5,18,43,.72) 100%);
+      overflow:hidden;
+      min-height:72vh;
+    }
+    .panel-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px;
+      border-bottom:1px solid rgba(149,190,239,.12);
+      background:rgba(7,24,52,.35);
+      flex-wrap:wrap;
+    }
+    .head-title{ margin:0; font-size:14px; color:var(--muted); font-weight:500; }
+    .controls{ display:flex; gap:8px; flex-wrap:wrap; }
+
+    .home-layout{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 280px;
+      align-items:start;
+    }
+    .home-main{ min-width:0; }
+    .home-sidebar{
+      border-left:1px solid rgba(149,190,239,.12);
+      padding:12px;
+      background:rgba(7,24,52,.22);
+      min-height:100%;
+    }
+    .home-sidebar-title{
+      margin:0 0 10px;
+      color:var(--muted);
+      font-size:13px;
+      font-weight:500;
+    }
+
+    .stage-wrap{ position:relative; padding:12px; }
+    .stage{
+      position:relative;
+      width:100%;
+      aspect-ratio:16/9;
+      border-radius:14px;
+      overflow:hidden;
+      background:var(--panel-strong);
+      border:1px solid rgba(149,190,239,.25);
+    }
+    .stage img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      background:#0a1831;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+    .overlay{
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:0;
+      padding:12px;
+      background:linear-gradient(180deg, transparent 0%, rgba(2,11,28,.86) 42%, rgba(2,11,28,.94) 100%);
+    }
+    .overlay h2{ margin:0; font-size:22px; }
+    .overlay p{ margin:6px 0 0; color:#d2e7ff; font-size:13px; line-height:1.45; max-width:760px; }
+    .barrage-layer{
+      position:absolute;
+      inset:0;
+      overflow:hidden;
+      pointer-events:none;
+      z-index:2;
+    }
+    .barrage-item{
+      position:absolute;
+      white-space:nowrap;
+      max-width:min(68vw, 520px);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      font-size:11px;
+      line-height:1.15;
+      color:rgba(244,250,255,.97);
+      background:rgba(5,18,44,.56);
+      border:1px solid rgba(188,220,255,.46);
+      border-radius:999px;
+      padding:3px 7px;
+      text-shadow:0 1px 2px rgba(0,0,0,.55);
+      animation-name:barrage-drift;
+      animation-timing-function:linear;
+      animation-iteration-count:infinite;
+    }
+    @keyframes barrage-drift{
+      0%{ transform:translate3d(0, 0, 0); }
+      100%{ transform:translate3d(-80px, 0, 0); }
+    }
+
+    .nav-arrow{
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      width:42px;
+      height:42px;
+      border-radius:50%;
+      border:1px solid rgba(160,191,237,.55);
+      background:rgba(8,30,66,.76);
+      color:var(--text);
+      font-size:20px;
+      cursor:pointer;
+      display:grid;
+      place-items:center;
+    }
+    .nav-arrow.prev{ left:12px; }
+    .nav-arrow.next{ right:12px; }
+
+    .thumb-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(380px,1fr));
+      gap:14px;
+      padding:12px;
+    }
+    .thumb{
+      border:1px solid rgba(149,190,239,.25);
+      border-radius:10px;
+      overflow:hidden;
+      background:rgba(4,18,41,.68);
+      cursor:pointer;
+    }
+    .thumb img{ width:100%; aspect-ratio:4/3; object-fit:cover; display:block; }
+    .thumb h4{
+      margin:0;
+      padding:8px 8px 0;
+      color:#e7f2ff;
+      font-size:14px;
+      line-height:1.35;
+      font-weight:600;
+    }
+    .thumb p{ margin:0; padding:8px; color:#c0d9f8; font-size:12px; line-height:1.35; min-height:34px; }
+
+    .discussion{
+      margin:0 12px 12px;
+      border:1px solid rgba(149,190,239,.14);
+      border-radius:12px;
+      background:rgba(5,19,43,.34);
+      padding:10px;
+    }
+    .discussion h3{ margin:0 0 8px; font-size:13px; color:var(--muted); font-weight:500; }
+    .comment-list{ display:grid; gap:8px; max-height:220px; overflow:auto; margin-bottom:10px; }
+    .comment-item{
+      border:1px solid rgba(149,190,239,.12);
+      border-radius:10px;
+      background:rgba(10,31,67,.35);
+      padding:8px 10px;
+    }
+    .comment-meta{ margin:0; color:#b8d6fa; font-size:12px; }
+    .comment-body{ margin:4px 0 0; color:#e8f3ff; font-size:13px; line-height:1.45; white-space:pre-wrap; word-break:break-word; }
+    .comment-empty{ margin:0 0 10px; color:var(--muted); font-size:13px; }
+
+    .comment-form{ display:grid; gap:8px; }
+    .comment-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .input, .textarea{
+      width:100%;
+      border:1px solid rgba(149,190,239,.35);
+      border-radius:10px;
+      background:rgba(6,22,49,.82);
+      color:var(--text);
+      padding:8px 10px;
+      font-size:13px;
+      outline:none;
+    }
+    .input:focus, .textarea:focus{ border-color:rgba(123,198,255,.95); }
+    .input{ max-width:280px; }
+    .textarea{ min-height:74px; resize:vertical; }
+    .check{ display:flex; align-items:center; gap:6px; color:#d2e7ff; font-size:13px; }
+    .notice{ margin:0; color:#b9dcff; font-size:12px; min-height:16px; }
+    .notice.error{ color:var(--danger); }
+
+    .empty{ margin:0; color:var(--muted); font-size:14px; padding:14px; }
+    .error{ margin:12px; color:#ffd7dc; background:rgba(106,17,33,.42); border:1px solid rgba(255,142,159,.35); border-radius:10px; padding:10px 12px; font-size:13px; }
+    .hidden{ display:none !important; }
+
+    @media (max-width:1040px){
+      .home-layout{ grid-template-columns:1fr; }
+      .home-sidebar{ display:none; }
+    }
+    @media (max-width:860px){
+      .stage{ aspect-ratio:4/3; }
+      .overlay h2{ font-size:19px; }
+      .topbar{ align-items:flex-start; }
+      .thumb-grid{ grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="title-wrap">
+        <h1 id="siteTitle">Friends Gallery</h1>
+      </div>
+      <div class="top-actions">
+        <span class="status" id="statusLine">Loading...</span>
+        <a class="btn" id="helpBtn" href="/help.html">How To Use</a>
+        <button class="btn" id="openDrawerBtn" type="button">Photographers</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel" id="homeView">
+        <div class="panel-head">
+          <h2 class="head-title" id="homeTitle">Featured</h2>
+          <div class="controls">
+            <button class="btn" id="homePrevBtn" type="button">Prev</button>
+            <button class="btn" id="homeNextBtn" type="button">Next</button>
+            <button class="btn" id="homeModeToggleBtn" type="button">Grid</button>
+            <button class="btn" id="barrageToggleBtn" type="button">Barrage On</button>
+            <button class="btn" id="openCurrentBtn" type="button">Open Gallery</button>
+            <button class="btn" id="refreshHomeBtn" type="button">Refresh</button>
+          </div>
+        </div>
+
+        <div class="home-layout">
+          <div class="home-main">
+            <div class="stage-wrap" id="homeSlideshowWrap">
+              <div class="stage" id="homeStage">
+                <img id="homeImage" alt="featured photo">
+                <div class="barrage-layer" id="homeBarrage"></div>
+                <div class="overlay">
+                  <h2 id="homePersonName">-</h2>
+                  <p id="homePersonBio">-</p>
+                </div>
+                <button class="nav-arrow prev" id="homeStagePrev" type="button" aria-label="previous">&#10094;</button>
+                <button class="nav-arrow next" id="homeStageNext" type="button" aria-label="next">&#10095;</button>
+              </div>
+              <p class="empty hidden" id="homeEmpty">No user folders found yet.</p>
+              <div class="error hidden" id="homeError"></div>
+            </div>
+            <div id="homeGridWrap" class="thumb-grid hidden"></div>
+
+            <section class="discussion" id="homeDiscussion">
+              <h3 id="homeDiscussTitle">Discussion</h3>
+              <div class="comment-list" id="homeCommentList"></div>
+              <p class="comment-empty hidden" id="homeCommentEmpty">No comments yet.</p>
+              <form class="comment-form" id="homeCommentForm">
+                <div class="comment-row">
+                  <input class="input" id="homeName" type="text" maxlength="40" placeholder="Your name (optional)">
+                  <label class="check"><input id="homeAnonymous" type="checkbox"> <span id="homeAnonymousLabel">Anonymous</span></label>
+                </div>
+                <textarea class="textarea" id="homeMessage" maxlength="500" placeholder="Leave a comment..."></textarea>
+                <div class="comment-row">
+                  <button class="btn" id="homeSubmitBtn" type="submit">Send</button>
+                </div>
+                <p class="notice" id="homeNotice"></p>
+              </form>
+            </section>
+          </div>
+          <aside class="home-sidebar" id="homeSidebar">
+            <h3 class="home-sidebar-title" id="homeSidebarTitle">Photographers</h3>
+            <div class="people" id="homePeopleList"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="panel hidden" id="userView">
+        <div class="panel-head">
+          <h2 class="head-title" id="userTitle">Photographer</h2>
+          <div class="controls">
+            <button class="btn" id="backBtn" type="button">Back</button>
+            <button class="btn" id="userBarrageToggleBtn" type="button">Barrage On</button>
+            <button class="btn" id="userModeToggleBtn" type="button">Grid</button>
+            <button class="btn" id="refreshUserBtn" type="button">Refresh</button>
+          </div>
+        </div>
+
+        <div id="userSlideshowWrap" class="stage-wrap">
+          <div class="stage" id="userStage">
+            <img id="userImage" alt="photo">
+            <div class="barrage-layer" id="userBarrage"></div>
+            <div class="overlay">
+              <h2 id="userSlideIndex">1 / 1</h2>
+              <p id="userCaption"></p>
+            </div>
+            <button class="nav-arrow prev" id="userStagePrev" type="button" aria-label="previous">&#10094;</button>
+            <button class="nav-arrow next" id="userStageNext" type="button" aria-label="next">&#10095;</button>
+          </div>
+        </div>
+
+        <div id="userGridWrap" class="thumb-grid hidden"></div>
+        <p class="empty hidden" id="userEmpty">No photos in this folder yet.</p>
+        <div class="error hidden" id="userError"></div>
+
+        <section class="discussion" id="userDiscussion">
+          <h3 id="userDiscussTitle">Discussion</h3>
+          <div class="comment-list" id="userCommentList"></div>
+          <p class="comment-empty hidden" id="userCommentEmpty">No comments yet.</p>
+          <form class="comment-form" id="userCommentForm">
+            <div class="comment-row">
+              <input class="input" id="userName" type="text" maxlength="40" placeholder="Your name (optional)">
+              <label class="check"><input id="userAnonymous" type="checkbox"> <span id="userAnonymousLabel">Anonymous</span></label>
+            </div>
+            <textarea class="textarea" id="userMessage" maxlength="500" placeholder="Leave a comment..."></textarea>
+            <div class="comment-row">
+              <button class="btn" id="userSubmitBtn" type="submit">Send</button>
+            </div>
+            <p class="notice" id="userNotice"></p>
+          </form>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <aside class="drawer" id="drawer">
+    <div class="drawer-head">
+      <strong id="drawerTitle">Photographers</strong>
+      <button class="btn" id="closeDrawerBtn" type="button">Close</button>
+    </div>
+    <div class="drawer-body">
+      <div class="people" id="peopleList"></div>
+    </div>
+  </aside>
+  <div class="mask" id="mask"></div>
+
+  <script>
+    const LANG = ((navigator.language || "en").toLowerCase().startsWith("zh")) ? "zh" : "en";
+
+    const I18N = {
+      zh: {
+        title: "朋友摄影画廊",
+        siteTitle: "朋友摄影画廊",
+        loading: "加载中...",
+        howToUse: "使用教程",
+        photographers: "摄影师",
+        featured: "精选摄影师",
+        featuredGrid: "摄影师网格",
+        prev: "上一张",
+        next: "下一张",
+        openGallery: "进入摄影师主页",
+        refresh: "刷新",
+        back: "返回首页",
+        slideshow: "幻灯片",
+        grid: "网格",
+        switchToGrid: "切换到网格",
+        switchToSlideshow: "切换到幻灯片",
+        close: "关闭",
+        noUserFolders: "暂时还没有用户文件夹。",
+        noBio: "暂无简介。",
+        noPhotos: "该用户目录下还没有照片。",
+        untitledCaption: "暂无图片说明。",
+        photosUnit: "张照片",
+        statusUsersPrefix: "用户",
+        statusLastScanPrefix: "上次扫描",
+        pendingFirstScan: "等待首次扫描",
+        invalidServerResponse: "服务器返回格式无效。",
+        requestFailedPrefix: "请求失败",
+        drawerTitle: "摄影师列表",
+        featuredAlt: "精选图片",
+        photoAlt: "照片",
+
+        discussion: "讨论区",
+        noComments: "还没有留言，来发布第一条吧。",
+        yourNameOptional: "你的名字（可选）",
+        anonymous: "匿名",
+        leaveComment: "输入你想说的话...",
+        send: "发送留言",
+        messageRequired: "请输入留言内容。",
+        sending: "发送中...",
+        sentAndNext: "留言成功，已切换到下一张。",
+        commentUnavailable: "当前图片不可留言。",
+        commentFailed: "留言失败",
+        anonymousName: "匿名",
+        commentByPhoto: "照片讨论",
+        barrageOn: "弹幕开",
+        barrageOff: "弹幕关"
+      },
+      en: {
+        title: "Friends Gallery",
+        siteTitle: "Friends Gallery",
+        loading: "Loading...",
+        howToUse: "How To Use",
+        photographers: "Photographers",
+        featured: "Featured Photographers",
+        featuredGrid: "Photographer Grid",
+        prev: "Prev",
+        next: "Next",
+        openGallery: "Open Gallery",
+        refresh: "Refresh",
+        back: "Back",
+        slideshow: "Slideshow",
+        grid: "Grid",
+        switchToGrid: "Switch To Grid",
+        switchToSlideshow: "Switch To Slideshow",
+        close: "Close",
+        noUserFolders: "No user folders found yet.",
+        noBio: "No bio yet.",
+        noPhotos: "No photos in this folder yet.",
+        untitledCaption: "No caption.",
+        photosUnit: "photos",
+        statusUsersPrefix: "Users",
+        statusLastScanPrefix: "Last scan",
+        pendingFirstScan: "pending first scan",
+        invalidServerResponse: "Invalid server response.",
+        requestFailedPrefix: "Request failed",
+        drawerTitle: "Photographers",
+        featuredAlt: "featured photo",
+        photoAlt: "photo",
+
+        discussion: "Discussion",
+        noComments: "No comments yet. Be the first one.",
+        yourNameOptional: "Your name (optional)",
+        anonymous: "Anonymous",
+        leaveComment: "Leave a comment...",
+        send: "Send",
+        messageRequired: "Please enter a comment.",
+        sending: "Sending...",
+        sentAndNext: "Comment posted. Switched to next slide.",
+        commentUnavailable: "Comment is unavailable for current image.",
+        commentFailed: "Failed to send comment",
+        anonymousName: "Anonymous",
+        commentByPhoto: "Photo Discussion",
+        barrageOn: "Barrage On",
+        barrageOff: "Barrage Off"
+      }
+    };
+
+    const state = {
+      users: [],
+      usersBySlug: new Map(),
+      lastScanAt: null,
+      activeUser: null,
+      activeUserPayload: null,
+      homeMode: "slideshow",
+      homeIndex: 0,
+      userIndex: 0,
+      userMode: "slideshow",
+      homeTimer: null,
+      userTimer: null,
+      homeTouchX: null,
+      userTouchX: null,
+      homeCommenting: false,
+      commentCache: new Map(),
+      barrageEnabled: true,
+      barrageRenderSig: { home: "", user: "" }
+    };
+
+    const els = {
+      siteTitle: document.getElementById("siteTitle"),
+      statusLine: document.getElementById("statusLine"),
+      helpBtn: document.getElementById("helpBtn"),
+      homeModeToggleBtn: document.getElementById("homeModeToggleBtn"),
+      barrageToggleBtn: document.getElementById("barrageToggleBtn"),
+      userBarrageToggleBtn: document.getElementById("userBarrageToggleBtn"),
+      userModeToggleBtn: document.getElementById("userModeToggleBtn"),
+      openDrawerBtn: document.getElementById("openDrawerBtn"),
+
+      homeView: document.getElementById("homeView"),
+      userView: document.getElementById("userView"),
+      homeTitle: document.getElementById("homeTitle"),
+      homePrevBtn: document.getElementById("homePrevBtn"),
+      homeNextBtn: document.getElementById("homeNextBtn"),
+      openCurrentBtn: document.getElementById("openCurrentBtn"),
+      refreshHomeBtn: document.getElementById("refreshHomeBtn"),
+      homeSlideshowWrap: document.getElementById("homeSlideshowWrap"),
+      homeGridWrap: document.getElementById("homeGridWrap"),
+      homeImage: document.getElementById("homeImage"),
+      homePersonName: document.getElementById("homePersonName"),
+      homePersonBio: document.getElementById("homePersonBio"),
+      homeStagePrev: document.getElementById("homeStagePrev"),
+      homeStageNext: document.getElementById("homeStageNext"),
+      homeStage: document.getElementById("homeStage"),
+      homeBarrage: document.getElementById("homeBarrage"),
+      homeEmpty: document.getElementById("homeEmpty"),
+      homeError: document.getElementById("homeError"),
+      homeSidebarTitle: document.getElementById("homeSidebarTitle"),
+      homePeopleList: document.getElementById("homePeopleList"),
+      homeSidebar: document.getElementById("homeSidebar"),
+
+      homeDiscussTitle: document.getElementById("homeDiscussTitle"),
+      homeDiscussion: document.getElementById("homeDiscussion"),
+      homeCommentList: document.getElementById("homeCommentList"),
+      homeCommentEmpty: document.getElementById("homeCommentEmpty"),
+      homeCommentForm: document.getElementById("homeCommentForm"),
+      homeName: document.getElementById("homeName"),
+      homeAnonymous: document.getElementById("homeAnonymous"),
+      homeAnonymousLabel: document.getElementById("homeAnonymousLabel"),
+      homeMessage: document.getElementById("homeMessage"),
+      homeSubmitBtn: document.getElementById("homeSubmitBtn"),
+      homeNotice: document.getElementById("homeNotice"),
+
+      userTitle: document.getElementById("userTitle"),
+      backBtn: document.getElementById("backBtn"),
+      refreshUserBtn: document.getElementById("refreshUserBtn"),
+      userSlideshowWrap: document.getElementById("userSlideshowWrap"),
+      userGridWrap: document.getElementById("userGridWrap"),
+      userImage: document.getElementById("userImage"),
+      userCaption: document.getElementById("userCaption"),
+      userSlideIndex: document.getElementById("userSlideIndex"),
+      userStagePrev: document.getElementById("userStagePrev"),
+      userStageNext: document.getElementById("userStageNext"),
+      userStage: document.getElementById("userStage"),
+      userBarrage: document.getElementById("userBarrage"),
+      userEmpty: document.getElementById("userEmpty"),
+      userError: document.getElementById("userError"),
+
+      userDiscussTitle: document.getElementById("userDiscussTitle"),
+      userDiscussion: document.getElementById("userDiscussion"),
+      userCommentList: document.getElementById("userCommentList"),
+      userCommentEmpty: document.getElementById("userCommentEmpty"),
+      userCommentForm: document.getElementById("userCommentForm"),
+      userName: document.getElementById("userName"),
+      userAnonymous: document.getElementById("userAnonymous"),
+      userAnonymousLabel: document.getElementById("userAnonymousLabel"),
+      userMessage: document.getElementById("userMessage"),
+      userSubmitBtn: document.getElementById("userSubmitBtn"),
+      userNotice: document.getElementById("userNotice"),
+
+      drawer: document.getElementById("drawer"),
+      drawerTitle: document.getElementById("drawerTitle"),
+      closeDrawerBtn: document.getElementById("closeDrawerBtn"),
+      mask: document.getElementById("mask"),
+      peopleList: document.getElementById("peopleList")
+    };
+
+    function t(key) {
+      return (I18N[LANG] && I18N[LANG][key]) || I18N.en[key] || key;
+    }
+
+    init();
+
+    function init() {
+      const savedBarrage = window.localStorage.getItem("gallery_barrage_enabled");
+      if (savedBarrage === "0") state.barrageEnabled = false;
+      applyI18nStatic();
+      bindEvents();
+      routeFromLocation();
+      setInterval(() => refreshCurrentView(), 60000);
+    }
+
+    function applyI18nStatic() {
+      document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
+      document.title = t("title");
+      els.siteTitle.textContent = t("siteTitle");
+      els.helpBtn.textContent = t("howToUse");
+      els.openDrawerBtn.textContent = t("photographers");
+      els.homeTitle.textContent = t("featured");
+      els.homePrevBtn.textContent = t("prev");
+      els.homeNextBtn.textContent = t("next");
+      els.openCurrentBtn.textContent = t("openGallery");
+      els.refreshHomeBtn.textContent = t("refresh");
+      els.backBtn.textContent = t("back");
+      els.refreshUserBtn.textContent = t("refresh");
+      els.closeDrawerBtn.textContent = t("close");
+      els.drawerTitle.textContent = t("drawerTitle");
+      els.homeSidebarTitle.textContent = t("drawerTitle");
+      els.homeEmpty.textContent = t("noUserFolders");
+      els.userEmpty.textContent = t("noPhotos");
+      els.statusLine.textContent = t("loading");
+
+      els.homeDiscussTitle.textContent = t("commentByPhoto");
+      els.userDiscussTitle.textContent = t("commentByPhoto");
+      els.homeCommentEmpty.textContent = t("noComments");
+      els.userCommentEmpty.textContent = t("noComments");
+      els.homeName.placeholder = t("yourNameOptional");
+      els.userName.placeholder = t("yourNameOptional");
+      els.homeAnonymousLabel.textContent = t("anonymous");
+      els.userAnonymousLabel.textContent = t("anonymous");
+      els.homeMessage.placeholder = t("leaveComment");
+      els.userMessage.placeholder = t("leaveComment");
+      els.homeSubmitBtn.textContent = t("send");
+      els.userSubmitBtn.textContent = t("send");
+      updateModeToggleButtons();
+      updateBarrageToggleLabel();
+    }
+
+    function bindEvents() {
+      window.addEventListener("popstate", routeFromLocation);
+
+      els.openDrawerBtn.addEventListener("click", openDrawer);
+      els.barrageToggleBtn.addEventListener("click", () => {
+        setBarrageEnabled(!state.barrageEnabled);
+      });
+      els.userBarrageToggleBtn.addEventListener("click", () => {
+        setBarrageEnabled(!state.barrageEnabled);
+      });
+      els.closeDrawerBtn.addEventListener("click", closeDrawer);
+      els.mask.addEventListener("click", closeDrawer);
+
+      els.homePrevBtn.addEventListener("click", () => stepHome(-1));
+      els.homeNextBtn.addEventListener("click", () => stepHome(1));
+      els.homeModeToggleBtn.addEventListener("click", () => {
+        setHomeMode(state.homeMode === "slideshow" ? "grid" : "slideshow");
+      });
+      els.homeStagePrev.addEventListener("click", () => stepHome(-1));
+      els.homeStageNext.addEventListener("click", () => stepHome(1));
+      els.openCurrentBtn.addEventListener("click", () => {
+        const user = state.users[state.homeIndex];
+        if (!user) return;
+        navigateUser(user.slug, true);
+      });
+      els.refreshHomeBtn.addEventListener("click", () => loadUsers(true));
+
+      els.backBtn.addEventListener("click", () => navigateHome(true));
+      els.userModeToggleBtn.addEventListener("click", () => {
+        setUserMode(state.userMode === "slideshow" ? "grid" : "slideshow");
+      });
+      els.refreshUserBtn.addEventListener("click", () => {
+        if (state.activeUser) loadUser(state.activeUser, true);
+      });
+      els.userStagePrev.addEventListener("click", () => stepUser(-1));
+      els.userStageNext.addEventListener("click", () => stepUser(1));
+
+      els.peopleList.addEventListener("click", (event) => {
+        const slug = getSlugFromEvent(event);
+        if (!slug) return;
+        closeDrawer();
+        navigateUser(slug, true);
+      });
+      els.homePeopleList.addEventListener("click", (event) => {
+        const slug = getSlugFromEvent(event);
+        if (!slug) return;
+        navigateUser(slug, true);
+      });
+
+      els.homeAnonymous.addEventListener("change", () => {
+        els.homeName.disabled = els.homeAnonymous.checked;
+      });
+      els.userAnonymous.addEventListener("change", () => {
+        els.userName.disabled = els.userAnonymous.checked;
+      });
+
+      els.homeCommentForm.addEventListener("focusin", () => {
+        if (state.activeUser) return;
+        if (!state.homeCommenting) {
+          state.homeCommenting = true;
+          stopHomeAuto();
+          clearNotice(els.homeNotice);
+        }
+      });
+
+      els.homeCommentForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        await submitHomeComment();
+      });
+
+      els.userCommentForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        await submitUserComment();
+      });
+      bindEnterToSubmit(els.homeMessage, els.homeCommentForm);
+      bindEnterToSubmit(els.userMessage, els.userCommentForm);
+
+      bindSwipe(els.homeStage, "home");
+      bindSwipe(els.userStage, "user");
+    }
+
+    function bindEnterToSubmit(textarea, form) {
+      textarea.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || event.shiftKey) return;
+        event.preventDefault();
+        form.requestSubmit();
+      });
+    }
+
+    function getSlugFromEvent(event) {
+      const row = event.target.closest("[data-slug]");
+      if (!row) return null;
+      const slug = row.getAttribute("data-slug");
+      return slug || null;
+    }
+
+    function bindSwipe(node, kind) {
+      node.addEventListener("touchstart", (event) => {
+        const touch = event.changedTouches && event.changedTouches[0];
+        if (!touch) return;
+        if (kind === "home") state.homeTouchX = touch.clientX;
+        else state.userTouchX = touch.clientX;
+      }, { passive: true });
+
+      node.addEventListener("touchend", (event) => {
+        const touch = event.changedTouches && event.changedTouches[0];
+        if (!touch) return;
+
+        const startX = kind === "home" ? state.homeTouchX : state.userTouchX;
+        if (startX == null) return;
+        const delta = touch.clientX - startX;
+
+        if (Math.abs(delta) >= 40) {
+          if (delta < 0) {
+            if (kind === "home") stepHome(1);
+            else stepUser(1);
+          } else {
+            if (kind === "home") stepHome(-1);
+            else stepUser(-1);
+          }
+        }
+
+        if (kind === "home") state.homeTouchX = null;
+        else state.userTouchX = null;
+      }, { passive: true });
+    }
+
+    async function routeFromLocation() {
+      await loadUsers(false);
+      const slug = readSlugFromPath();
+      if (slug) await loadUser(slug, false);
+      else showHome();
+    }
+
+    function readSlugFromPath() {
+      const match = window.location.pathname.match(/^\/u\/([^/]+)$/);
+      if (!match) return null;
+      try {
+        return decodeURIComponent(match[1]);
+      } catch (_error) {
+        return null;
+      }
+    }
+
+    async function refreshCurrentView() {
+      if (state.activeUser) {
+        await loadUsers(false);
+        await loadUser(state.activeUser, true);
+      } else {
+        await loadUsers(true);
+      }
+    }
+
+    async function loadUsers(keepIndex) {
+      clearError(els.homeError);
+      try {
+        const payload = await fetchJson("/api/users");
+        const oldSlug = state.users[state.homeIndex] ? state.users[state.homeIndex].slug : null;
+
+        state.users = Array.isArray(payload.users) ? payload.users : [];
+        state.lastScanAt = payload.lastScanAt || null;
+        state.usersBySlug = new Map(state.users.map((u) => [u.slug, u]));
+
+        if (!state.users.length) {
+          state.homeIndex = 0;
+        } else if (keepIndex) {
+          state.homeIndex = normalizeIndex(state.homeIndex, state.users.length);
+        } else if (oldSlug && state.usersBySlug.has(oldSlug)) {
+          state.homeIndex = state.users.findIndex((u) => u.slug === oldSlug);
+        } else {
+          state.homeIndex = normalizeIndex(state.homeIndex, state.users.length);
+        }
+
+        renderPeopleList();
+        renderHomeContent();
+        updateStatus();
+      } catch (error) {
+        state.users = [];
+        state.usersBySlug = new Map();
+        renderPeopleList();
+        renderHomeContent();
+        showError(els.homeError, error.message);
+      }
+    }
+
+    function navigateHome(push) {
+      if (push && window.location.pathname !== "/") history.pushState({}, "", "/");
+      state.activeUser = null;
+      state.activeUserPayload = null;
+      showHome();
+    }
+
+    async function navigateUser(slug, push) {
+      if (push) {
+        const nextPath = "/u/" + encodeURIComponent(slug);
+        if (window.location.pathname !== nextPath) history.pushState({ slug }, "", nextPath);
+      }
+      await loadUser(slug, false);
+    }
+
+    async function loadUser(slug, preserveIndex) {
+      clearError(els.userError);
+      try {
+        const payload = await fetchJson("/api/users/" + encodeURIComponent(slug));
+        const user = payload.user;
+        state.activeUser = user.slug;
+        state.activeUserPayload = user;
+
+        const photos = Array.isArray(user.photos) ? user.photos : [];
+        state.userIndex = preserveIndex ? Math.min(state.userIndex, Math.max(photos.length - 1, 0)) : 0;
+
+        showUser();
+      } catch (error) {
+        showError(els.userError, error.message);
+      }
+    }
+
+    function showHome() {
+      els.homeView.classList.remove("hidden");
+      els.userView.classList.add("hidden");
+      stopUserAuto();
+      renderHomeContent();
+      startHomeAuto();
+      updateStatus();
+      renderPeopleList();
+    }
+
+    function showUser() {
+      if (!state.activeUserPayload) return;
+      state.homeCommenting = false;
+      clearNotice(els.homeNotice);
+      els.homeView.classList.add("hidden");
+      els.userView.classList.remove("hidden");
+      const user = state.activeUserPayload;
+      els.userTitle.textContent = user.name || user.slug;
+
+      stopHomeAuto();
+      renderUserContent();
+      renderPeopleList();
+      if (state.userMode === "slideshow") startUserAuto();
+      updateStatus();
+    }
+
+    function setHomeMode(mode) {
+      if (state.homeMode === mode) return;
+      state.homeMode = mode;
+      state.homeCommenting = false;
+      clearNotice(els.homeNotice);
+      renderHomeContent();
+      if (mode === "slideshow") startHomeAuto();
+      else stopHomeAuto();
+    }
+
+    function setUserMode(mode) {
+      if (state.userMode === mode) return;
+      state.userMode = mode;
+      renderUserContent();
+      if (mode === "slideshow") startUserAuto();
+      else stopUserAuto();
+    }
+
+    function renderHomeContent() {
+      const isGrid = state.homeMode === "grid";
+      updateModeToggleButtons();
+
+      els.homePrevBtn.classList.toggle("hidden", isGrid);
+      els.homeNextBtn.classList.toggle("hidden", isGrid);
+      els.openCurrentBtn.classList.toggle("hidden", isGrid);
+      els.barrageToggleBtn.classList.toggle("hidden", isGrid);
+      els.homeSlideshowWrap.classList.toggle("hidden", isGrid);
+      els.homeDiscussion.classList.toggle("hidden", isGrid);
+      els.homeSidebar.classList.toggle("hidden", isGrid);
+      els.homeGridWrap.classList.toggle("hidden", !isGrid);
+
+      if (isGrid) {
+        renderHomeGrid();
+        stopHomeAuto();
+        clearBarrage("home");
+        return;
+      }
+
+      renderHomeSlide();
+    }
+
+    function renderHomeSlide() {
+      els.homeTitle.textContent = t("featured");
+      const users = state.users;
+      if (!users.length) {
+        els.homeEmpty.classList.remove("hidden");
+        els.homeImage.removeAttribute("src");
+        els.homePersonName.textContent = "-";
+        els.homePersonBio.textContent = t("noUserFolders");
+        setHomeCommentFormEnabled(false);
+        renderCommentList("home", []);
+        clearBarrage("home");
+        stopHomeAuto();
+        return;
+      }
+
+      els.homeEmpty.classList.add("hidden");
+      state.homeIndex = normalizeIndex(state.homeIndex, users.length);
+      const user = users[state.homeIndex];
+      const cover = user.coverUrl || user.avatarUrl || "";
+
+      if (cover) els.homeImage.src = cover;
+      else els.homeImage.removeAttribute("src");
+
+      els.homeImage.alt = user.name ? `${user.name} ${t("featuredAlt")}` : t("featuredAlt");
+      els.homePersonName.textContent = user.name || user.slug;
+      els.homePersonBio.textContent = (user.bio || t("noBio")) + ` · ${user.photoCount} ${t("photosUnit")}`;
+
+      const ref = getHomePhotoRef();
+      if (!ref) {
+        setHomeCommentFormEnabled(false);
+        renderCommentList("home", []);
+        clearBarrage("home");
+        showNotice(els.homeNotice, t("commentUnavailable"), false);
+      } else {
+        setHomeCommentFormEnabled(true);
+        clearNotice(els.homeNotice);
+        void loadAndRenderComments("home", ref, false);
+      }
+    }
+
+    function stepHome(delta) {
+      if (state.homeMode !== "slideshow") return;
+      if (!state.users.length) return;
+      state.homeIndex = normalizeIndex(state.homeIndex + delta, state.users.length);
+      renderHomeSlide();
+      startHomeAuto();
+    }
+
+    function renderHomeGrid() {
+      const users = state.users;
+      els.homeTitle.textContent = t("featuredGrid");
+      els.homeGridWrap.innerHTML = "";
+
+      if (!users.length) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = t("noUserFolders");
+        els.homeGridWrap.appendChild(empty);
+        return;
+      }
+
+      users.forEach((user, index) => {
+        const item = document.createElement("article");
+        item.className = "thumb";
+
+        const img = document.createElement("img");
+        img.loading = "lazy";
+        img.decoding = "async";
+        const cover = user.coverUrl || user.avatarUrl || "";
+        if (cover) img.src = cover;
+        img.alt = user.name ? `${user.name} ${t("featuredAlt")}` : t("featuredAlt");
+
+        const title = document.createElement("h4");
+        title.textContent = user.name || user.slug;
+
+        const meta = document.createElement("p");
+        meta.textContent = `${user.photoCount} ${t("photosUnit")} · ${user.bio || t("noBio")}`;
+
+        item.appendChild(img);
+        item.appendChild(title);
+        item.appendChild(meta);
+        item.addEventListener("click", () => {
+          state.homeIndex = index;
+          navigateUser(user.slug, true);
+        });
+
+        els.homeGridWrap.appendChild(item);
+      });
+    }
+
+    function renderUserContent() {
+      const user = state.activeUserPayload;
+      const photos = user && Array.isArray(user.photos) ? user.photos : [];
+      updateModeToggleButtons();
+
+      if (!photos.length) {
+        els.userEmpty.classList.remove("hidden");
+        els.userSlideshowWrap.classList.add("hidden");
+        els.userGridWrap.classList.add("hidden");
+        els.userDiscussion.classList.add("hidden");
+        setUserCommentFormEnabled(false);
+        renderCommentList("user", []);
+        clearBarrage("user");
+        showNotice(els.userNotice, t("commentUnavailable"), false);
+        return;
+      }
+
+      els.userEmpty.classList.add("hidden");
+
+      if (state.userMode === "grid") {
+        els.userSlideshowWrap.classList.add("hidden");
+        els.userGridWrap.classList.remove("hidden");
+        els.userDiscussion.classList.add("hidden");
+        renderUserGrid(photos);
+        setUserCommentFormEnabled(false);
+        renderCommentList("user", []);
+        clearBarrage("user");
+        clearNotice(els.userNotice);
+        return;
+      } else {
+        els.userGridWrap.classList.add("hidden");
+        els.userSlideshowWrap.classList.remove("hidden");
+        els.userDiscussion.classList.remove("hidden");
+        renderUserSlide(photos);
+      }
+
+      const ref = getUserPhotoRef();
+      if (!ref) {
+        setUserCommentFormEnabled(false);
+        renderCommentList("user", []);
+        clearBarrage("user");
+      } else {
+        setUserCommentFormEnabled(true);
+        clearNotice(els.userNotice);
+        void loadAndRenderComments("user", ref, false);
+      }
+    }
+
+    function renderUserGrid(photos) {
+      els.userGridWrap.innerHTML = "";
+      photos.forEach((photo, index) => {
+        const item = document.createElement("article");
+        item.className = "thumb";
+
+        const img = document.createElement("img");
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.src = photo.url;
+        img.alt = photo.name || t("photoAlt");
+
+        const cap = document.createElement("p");
+        cap.textContent = (photo.caption || "").trim() || t("untitledCaption");
+
+        item.appendChild(img);
+        item.appendChild(cap);
+        item.addEventListener("click", () => {
+          state.userIndex = index;
+          state.userMode = "slideshow";
+          renderUserContent();
+          startUserAuto();
+        });
+
+        els.userGridWrap.appendChild(item);
+      });
+    }
+
+    function renderUserSlide(photos) {
+      state.userIndex = normalizeIndex(state.userIndex, photos.length);
+      const photo = photos[state.userIndex];
+
+      els.userImage.src = photo.url;
+      els.userImage.alt = photo.name || t("photoAlt");
+      els.userCaption.textContent = (photo.caption || "").trim() || t("untitledCaption");
+      els.userSlideIndex.textContent = `${state.userIndex + 1} / ${photos.length}`;
+    }
+
+    function stepUser(delta) {
+      const photos = state.activeUserPayload && Array.isArray(state.activeUserPayload.photos)
+        ? state.activeUserPayload.photos
+        : [];
+      if (!photos.length) return;
+
+      state.userIndex = normalizeIndex(state.userIndex + delta, photos.length);
+      renderUserSlide(photos);
+      const ref = getUserPhotoRef();
+      if (ref) void loadAndRenderComments("user", ref, false);
+      startUserAuto();
+    }
+
+    function openDrawer() {
+      els.drawer.classList.add("open");
+      els.mask.classList.add("show");
+    }
+
+    function closeDrawer() {
+      els.drawer.classList.remove("open");
+      els.mask.classList.remove("show");
+    }
+
+    function renderPeopleList() {
+      els.peopleList.innerHTML = "";
+      els.homePeopleList.innerHTML = "";
+
+      state.users.forEach((user) => {
+        els.peopleList.appendChild(buildPersonItem(user));
+        els.homePeopleList.appendChild(buildPersonItem(user));
+      });
+    }
+
+    function buildPersonItem(user) {
+      const row = document.createElement("article");
+      row.className = "person-item";
+      row.setAttribute("data-slug", user.slug);
+
+      const active = state.activeUser
+        ? state.activeUser === user.slug
+        : (state.users[state.homeIndex] && state.users[state.homeIndex].slug === user.slug);
+      if (active) row.classList.add("active");
+
+      const name = document.createElement("h3");
+      name.className = "person-name";
+      name.textContent = user.name || user.slug;
+
+      const meta = document.createElement("p");
+      meta.className = "person-meta";
+      meta.textContent = `${user.photoCount} ${t("photosUnit")}`;
+
+      row.appendChild(name);
+      row.appendChild(meta);
+      return row;
+    }
+
+    function startHomeAuto() {
+      stopHomeAuto();
+      if (!state.users.length || state.activeUser || state.homeCommenting || state.homeMode !== "slideshow") return;
+      state.homeTimer = setInterval(() => stepHome(1), 5500);
+    }
+
+    function stopHomeAuto() {
+      if (!state.homeTimer) return;
+      clearInterval(state.homeTimer);
+      state.homeTimer = null;
+    }
+
+    function startUserAuto() {
+      stopUserAuto();
+      const photos = state.activeUserPayload && Array.isArray(state.activeUserPayload.photos)
+        ? state.activeUserPayload.photos
+        : [];
+      if (state.userMode !== "slideshow" || photos.length < 2) return;
+      state.userTimer = setInterval(() => stepUser(1), 5200);
+    }
+
+    function stopUserAuto() {
+      if (!state.userTimer) return;
+      clearInterval(state.userTimer);
+      state.userTimer = null;
+    }
+
+    function normalizeIndex(index, length) {
+      if (!length) return 0;
+      let x = index % length;
+      if (x < 0) x += length;
+      return x;
+    }
+
+    function updateStatus() {
+      const scanText = state.lastScanAt ? formatDate(state.lastScanAt) : t("pendingFirstScan");
+      els.statusLine.textContent = `${t("statusUsersPrefix")}: ${state.users.length} | ${t("statusLastScanPrefix")}: ${scanText}`;
+    }
+
+    function formatDate(value) {
+      const dt = new Date(value);
+      if (!Number.isFinite(dt.getTime())) return "unknown";
+      return dt.toLocaleString();
+    }
+
+    function getHomePhotoRef() {
+      const user = state.users[state.homeIndex];
+      if (!user || !user.coverRelPath) return null;
+      return { slug: user.slug, relPath: user.coverRelPath };
+    }
+
+    function getUserPhotoRef() {
+      const user = state.activeUserPayload;
+      if (!user || !Array.isArray(user.photos) || !user.photos.length) return null;
+      const index = normalizeIndex(state.userIndex, user.photos.length);
+      const photo = user.photos[index];
+      if (!photo || !photo.relPath) return null;
+      return { slug: user.slug, relPath: photo.relPath };
+    }
+
+    function commentKey(ref) {
+      return `${ref.slug}::${ref.relPath}`;
+    }
+
+    async function loadAndRenderComments(scope, ref, forceRefresh) {
+      if (!ref) {
+        renderCommentList(scope, []);
+        return;
+      }
+
+      const key = commentKey(ref);
+      if (!forceRefresh && state.commentCache.has(key)) {
+        renderCommentList(scope, state.commentCache.get(key));
+      }
+
+      try {
+        const payload = await fetchJson(`/api/comments?slug=${encodeURIComponent(ref.slug)}&relPath=${encodeURIComponent(ref.relPath)}`);
+        const list = Array.isArray(payload.comments) ? payload.comments : [];
+        state.commentCache.set(key, list);
+        renderCommentList(scope, list);
+      } catch (error) {
+        showNotice(scope === "home" ? els.homeNotice : els.userNotice, error.message, true);
+      }
+    }
+
+    function renderCommentList(scope, list) {
+      const listNode = scope === "home" ? els.homeCommentList : els.userCommentList;
+      const emptyNode = scope === "home" ? els.homeCommentEmpty : els.userCommentEmpty;
+
+      listNode.innerHTML = "";
+
+      if (!Array.isArray(list) || !list.length) {
+        emptyNode.classList.remove("hidden");
+        clearBarrage(scope);
+        return;
+      }
+
+      emptyNode.classList.add("hidden");
+
+      list.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "comment-item";
+
+        const meta = document.createElement("p");
+        meta.className = "comment-meta";
+        let displayName = (item.name || "").trim() || t("anonymousName");
+        if (displayName.toLowerCase() === "anonymous") {
+          displayName = t("anonymousName");
+        }
+        meta.textContent = `${displayName} · ${formatDate(item.createdAt)}`;
+
+        const body = document.createElement("p");
+        body.className = "comment-body";
+        body.textContent = item.message || "";
+
+        card.appendChild(meta);
+        card.appendChild(body);
+        listNode.appendChild(card);
+      });
+
+      renderBarrage(scope, list);
+    }
+
+    function setBarrageEnabled(enabled) {
+      state.barrageEnabled = Boolean(enabled);
+      window.localStorage.setItem("gallery_barrage_enabled", state.barrageEnabled ? "1" : "0");
+      updateBarrageToggleLabel();
+
+      if (!state.barrageEnabled) {
+        clearBarrage("home");
+        clearBarrage("user");
+        return;
+      }
+
+      const homeRef = getHomePhotoRef();
+      if (homeRef) {
+        const key = commentKey(homeRef);
+        renderBarrage("home", state.commentCache.get(key) || []);
+      }
+
+      const userRef = getUserPhotoRef();
+      if (userRef) {
+        const key = commentKey(userRef);
+        renderBarrage("user", state.commentCache.get(key) || []);
+      }
+    }
+
+    function updateBarrageToggleLabel() {
+      els.barrageToggleBtn.textContent = state.barrageEnabled ? t("barrageOn") : t("barrageOff");
+      els.barrageToggleBtn.classList.toggle("active", state.barrageEnabled);
+      els.userBarrageToggleBtn.textContent = state.barrageEnabled ? t("barrageOn") : t("barrageOff");
+      els.userBarrageToggleBtn.classList.toggle("active", state.barrageEnabled);
+    }
+
+    function updateModeToggleButtons() {
+      els.homeModeToggleBtn.textContent = state.homeMode === "slideshow"
+        ? t("switchToGrid")
+        : t("switchToSlideshow");
+      els.homeModeToggleBtn.classList.toggle("active", state.homeMode === "grid");
+
+      els.userModeToggleBtn.textContent = state.userMode === "slideshow"
+        ? t("switchToGrid")
+        : t("switchToSlideshow");
+      els.userModeToggleBtn.classList.toggle("active", state.userMode === "grid");
+    }
+
+    function clearBarrage(scope) {
+      const layer = scope === "home" ? els.homeBarrage : els.userBarrage;
+      layer.innerHTML = "";
+      state.barrageRenderSig[scope] = "";
+    }
+
+    function renderBarrage(scope, list) {
+      const layer = scope === "home" ? els.homeBarrage : els.userBarrage;
+      if (!state.barrageEnabled || !Array.isArray(list) || !list.length) {
+        clearBarrage(scope);
+        return;
+      }
+
+      const source = list.slice(-16).reverse();
+      const sig = source.map((item) => {
+        return `${item.name || ""}|${item.message || ""}|${item.createdAt || ""}`;
+      }).join("||");
+
+      if (state.barrageRenderSig[scope] === sig) return;
+      state.barrageRenderSig[scope] = sig;
+      layer.innerHTML = "";
+
+      const rows = 4;
+
+      source.forEach((item, index) => {
+        const text = `${((item.name || "").trim() || t("anonymousName"))}: ${(item.message || "").trim()}`;
+        if (!text || text === ":") return;
+
+        const node = document.createElement("span");
+        node.className = "barrage-item";
+        node.textContent = text.length > 90 ? `${text.slice(0, 87)}...` : text;
+
+        const seed = hashCode(`${item.name || ""}|${item.message || ""}|${item.createdAt || ""}|${index}`);
+        const row = index % rows;
+        const top = 2 + row * 4 + (Math.abs(seed) % 2);
+        const left = 8 + (Math.abs(seed >> 3) % 65);
+        const duration = (24 + (index % 7) * 4) / 1.5;
+        const delay = -(Math.abs(seed >> 7) % Math.floor(duration * 10)) / 10;
+
+        node.style.top = `${top}%`;
+        node.style.left = `${left}%`;
+        node.style.animationDuration = `${duration}s`;
+        node.style.animationDelay = `${delay}s`;
+        layer.appendChild(node);
+      });
+    }
+
+    function hashCode(input) {
+      let h = 0;
+      for (let i = 0; i < input.length; i += 1) {
+        h = ((h << 5) - h) + input.charCodeAt(i);
+        h |= 0;
+      }
+      return h;
+    }
+
+    async function submitHomeComment() {
+      const ref = getHomePhotoRef();
+      if (!ref) {
+        showNotice(els.homeNotice, t("commentUnavailable"), true);
+        return;
+      }
+
+      const message = (els.homeMessage.value || "").trim();
+      const name = (els.homeName.value || "").trim();
+      const anonymous = Boolean(els.homeAnonymous.checked);
+
+      if (!message) {
+        showNotice(els.homeNotice, t("messageRequired"), true);
+        return;
+      }
+
+      state.homeCommenting = true;
+      stopHomeAuto();
+      els.homeSubmitBtn.disabled = true;
+      showNotice(els.homeNotice, t("sending"), false);
+
+      try {
+        await postComment(ref, { name, message, anonymous });
+        state.commentCache.delete(commentKey(ref));
+        els.homeMessage.value = "";
+        if (anonymous) els.homeName.value = "";
+
+        state.homeCommenting = false;
+        showNotice(els.homeNotice, t("sentAndNext"), false);
+        stepHome(1);
+      } catch (error) {
+        showNotice(els.homeNotice, `${t("commentFailed")}: ${error.message}`, true);
+      } finally {
+        els.homeSubmitBtn.disabled = false;
+      }
+    }
+
+    async function submitUserComment() {
+      const ref = getUserPhotoRef();
+      if (!ref) {
+        showNotice(els.userNotice, t("commentUnavailable"), true);
+        return;
+      }
+
+      const message = (els.userMessage.value || "").trim();
+      const name = (els.userName.value || "").trim();
+      const anonymous = Boolean(els.userAnonymous.checked);
+
+      if (!message) {
+        showNotice(els.userNotice, t("messageRequired"), true);
+        return;
+      }
+
+      els.userSubmitBtn.disabled = true;
+      showNotice(els.userNotice, t("sending"), false);
+
+      try {
+        await postComment(ref, { name, message, anonymous });
+        state.commentCache.delete(commentKey(ref));
+        els.userMessage.value = "";
+        if (anonymous) els.userName.value = "";
+        await loadAndRenderComments("user", ref, true);
+        clearNotice(els.userNotice);
+      } catch (error) {
+        showNotice(els.userNotice, `${t("commentFailed")}: ${error.message}`, true);
+      } finally {
+        els.userSubmitBtn.disabled = false;
+      }
+    }
+
+    async function postComment(ref, payload) {
+      const response = await fetch("/api/comments", {
+        method: "POST",
+        headers: {
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          slug: ref.slug,
+          relPath: ref.relPath,
+          name: payload.name,
+          message: payload.message,
+          anonymous: payload.anonymous
+        })
+      });
+
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (_error) {
+        throw new Error(t("invalidServerResponse"));
+      }
+
+      if (!response.ok || !data || data.ok === false) {
+        throw new Error((data && data.msg) || `${t("requestFailedPrefix")}: ${response.status}`);
+      }
+
+      return data;
+    }
+
+    function setHomeCommentFormEnabled(enabled) {
+      els.homeName.disabled = !enabled || els.homeAnonymous.checked;
+      els.homeAnonymous.disabled = !enabled;
+      els.homeMessage.disabled = !enabled;
+      els.homeSubmitBtn.disabled = !enabled;
+    }
+
+    function setUserCommentFormEnabled(enabled) {
+      els.userName.disabled = !enabled || els.userAnonymous.checked;
+      els.userAnonymous.disabled = !enabled;
+      els.userMessage.disabled = !enabled;
+      els.userSubmitBtn.disabled = !enabled;
+    }
+
+    function showNotice(node, text, isError) {
+      node.textContent = text || "";
+      node.classList.toggle("error", Boolean(isError));
+    }
+
+    function clearNotice(node) {
+      node.textContent = "";
+      node.classList.remove("error");
+    }
+
+    async function fetchJson(url) {
+      const response = await fetch(url, {
+        headers: { "accept": "application/json" },
+        cache: "no-store"
+      });
+
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (_error) {
+        throw new Error(t("invalidServerResponse"));
+      }
+
+      if (!response.ok || !payload || payload.ok === false) {
+        const msg = payload && payload.msg ? payload.msg : (`${t("requestFailedPrefix")}: ${response.status}`);
+        throw new Error(msg);
+      }
+      return payload;
+    }
+
+    function showError(node, message) {
+      node.textContent = message;
+      node.classList.remove("hidden");
+    }
+
+    function clearError(node) {
+      node.textContent = "";
+      node.classList.add("hidden");
+    }
+  </script>
+</body>
+</html>

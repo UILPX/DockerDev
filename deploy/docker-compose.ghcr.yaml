@@ -42,6 +42,22 @@ services:
         aliases:
           - main-site
 
+  gallery:
+    image: ghcr.io/uilpx/gallery:latest
+    pull_policy: always
+    container_name: gallery
+    restart: unless-stopped
+    environment:
+      - SCAN_INTERVAL_MS=120000
+      - COMMENTS_FILE=/app/data/state/comments.json
+    volumes:
+      - ./volumes/gallery/library:/app/data/gallery:ro
+      - ./volumes/gallery/state:/app/data/state
+    networks:
+      webnet:
+        aliases:
+          - gallery
+
   nginx:
     image: nginx:alpine
     pull_policy: always

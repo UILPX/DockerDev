@@ -1,0 +1,6 @@
+.DS_Store
+
+# Local gallery runtime/test files
+gallery/.env.local
+gallery/data/library/
+gallery/data/state/

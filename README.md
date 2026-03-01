@@ -7,6 +7,7 @@
 - `games/`：小游戏与账号系统服务（含登录、分数提交、榜单）。
 - `reaction/`：反应测试服务（Simple / Pro / Aim 模式）。
 - `main-site/`：主站静态/应用服务。
+- `gallery/`：基于 NAS 目录自动建站的只读摄影作品展示服务。
 - `nginx/`：反向代理配置。
 - `deploy/`：生产部署入口（统一 compose 与更新脚本）。
 - `docs/`：部署与风格规范文档。
@@ -16,6 +17,7 @@
 1. 确认 Docker 网络 `webnet` 已创建（external network）。
 2. 使用 `deploy/docker-compose.ghcr.yaml` 从 GHCR 拉取镜像并启动容器。
 3. `games` 与 `reaction` 的 SQLite 数据库映射到宿主机文件，避免更新镜像导致数据丢失。
+4. `gallery` 需要把 NAS 作品目录映射到容器 `/app/data/gallery`（建议只读挂载）。
 
 ## 自动构建发布
 

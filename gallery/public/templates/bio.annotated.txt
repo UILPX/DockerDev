@@ -1,0 +1,13 @@
+# EN: Write your personal introduction below.
+# 中文：在下面填写你的个人简介。
+#
+# EN: Keep it short (1-2 lines).
+# 中文：建议 1-2 句话，简洁易读。
+#
+# EN: This file is optional.
+# 中文：这个文件是可选的。
+#
+# EN: If profile.json already has "bio", profile.json takes priority.
+# 中文：如果 profile.json 里已经写了 bio，会优先使用 profile.json。
+
+I am a travel photographer focused on street and landscape stories.

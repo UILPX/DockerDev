@@ -1,0 +1,15 @@
+gallery-root/
+  your-user-folder/
+    profile.json
+    avatar.jpg
+    bio.txt
+    photos/
+      1.jpg
+      1.txt
+      2.jpg
+
+Rules:
+1) one user = one folder under gallery-root
+2) avatar file is optional
+3) bio.txt is optional
+4) caption file must use same filename as image, with .txt extension

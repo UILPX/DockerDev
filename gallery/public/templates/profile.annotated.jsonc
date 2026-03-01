@@ -1,0 +1,18 @@
+{
+  // name: Display name shown on the website.
+  // 中文：显示名字，会在主页和摄影师页面显示。
+  "name": "Jeff",
+
+  // bio: Short introduction under your name.
+  // 中文：个人简介，建议 1-2 句话。
+  "bio": "Street and travel photographer.",
+
+  // avatar: Avatar filename inside your folder.
+  // 中文：用户头像文件名，必须是你自己目录里的文件。
+  // Example: avatar.jpg / avatar.png / avatar.webp
+  "avatar": "avatar.jpg",
+
+  // order: Smaller number appears earlier on homepage.
+  // 中文：排序值，数字越小越靠前；不写也可以。
+  "order": 10
+}

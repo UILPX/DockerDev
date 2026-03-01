@@ -1,0 +1,6 @@
+Write caption for one photo here.
+Important:
+This file name must match the photo file name.
+Example:
+1.jpg  ->  1.txt
+sunset.png  ->  sunset.txt
